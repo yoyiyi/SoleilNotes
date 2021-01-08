@@ -48,9 +48,7 @@ ThreadPoolExecutor 是 Executor 最为核心的类，由四部分组成。
 
 - BlockingQueue：用来暂时保存任务的工作队列。 
 
-- RejectedExecutionHandler：当 ThreadPoolExecutor 已经关闭或 ThreadPoolExecutor 已经饱和 
-
-时（达到了最大线程池大小且工作队列已满），execute() 方法将要调用的Handler。 
+- RejectedExecutionHandler：当 ThreadPoolExecutor 已经关闭或 ThreadPoolExecutor 已经饱和时（达到了最大线程池大小且工作队列已满），execute() 方法将要调用的 Handler。 
 
 ```java
 public ThreadPoolExecutor(int corePoolSize,//核心线程数量
