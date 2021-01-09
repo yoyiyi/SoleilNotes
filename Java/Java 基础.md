@@ -341,7 +341,6 @@ finalize：
 
 * Oracle JDK 根据二进制代码许可协议获得许可，而 OpenJDK 根据 GPL v2 许可获得许可。
 
-  
 
 ### Java 和 C++的区别?
 
