@@ -352,3 +352,64 @@ finalize：
 6. C++ 支持多继承，Java 中类都是单继承的。但是继承都有传递性，同时 Java 中的接口是多继承，类对接口的实现也是多实现。
 7. C++中，开发需要自己去管理内存， Java 中 JVM 有自己的GC机制，虽然有自己的 GC 机制，但是也会出现OOM 和内存泄漏的问题。C++ 中有析构函数，Java 中 Object 的 finalize 方法。
 8. C++ 运算符可以重载， Java 中不可以。同时 C++ 中支持强制自动转型，Java 中不行，会出现ClassCastException（类型不匹配）。
+
+### import java 和 javax 有什么区别？
+
+刚开始的时候  Java API 所必需的包是 java 开头的包，javax 当时只是扩展 API 包来使用。然而随着时间的推移，javax 逐渐地扩展成为 Java API 的组成部分。但是，将扩展从 javax 包移动到 java 包确实太麻烦了，最终会破坏一堆现有的代码。因此，最终决定 javax 包将成为标准API的一部分。所以，实际上 java 和 javax **没有区别**，这都是一个名字。
+
+### Java 语言是编译与解释并存？
+
+编译：所有的 Java 代码都是要编译的，.java 不经过编译没啥卵用。
+
+解释：java 代码编译后生成字节码（ .class 文件 ）不能直接运行，它是解释运行在 JVM 上的，所以它是解释运行的。
+
+### 字符型常量和字符串常量的区别？
+
+* 形式上: 字符常量是单引号（‘ ’）引起的一个字符; 字符串常量是双引号（" "）引起的 0 个或若干个字符.
+
+* 含义上: 字符常量相当于一个整型值( ASCII 值),可以参加表达式运算; 字符串常量代表一个地址值(该字符串在内存中存放位置).
+
+* 占内存大小：字符常量只占 2 个字节; 字符串常量占若干个字节 (**注意： char 在 Java 中占两个字节**)。
+
+### Java 基本类型占用内存大小？
+
+- byte/8 bit
+- char/16 bit
+- short/16 bit
+- int/32 bit
+- float/32 bit
+- long/64 bit
+- double/64 bit
+- boolean/~
+
+### Java 注释
+
+```java
+// 单行注释
+/* 多行注释 */
+```
+
+### 自增自减运算符
+
+++i，先加 1 后赋值。
+
+i++，先赋值后加 1。
+
+符号在先，先加/减，符号在后，后加/减。
+
+### Java 标识符和关键字
+
+**标识符**：是为方法、变量或其他用户定义项所定义的名称。标识符可以有一个或多个字符。在 Java 语言中，标识符的构成规则如下：
+
+- 标识符由数字（0~9）和字母（A~Z 和 a~z）、美元符号（$）、下划线（_）以及 Unicode 字符集中符号大于 0xC0 的所有符号组合构成（各符号之间没有空格）。
+- 标识符的第一个符号为字母、下划线和美元符号，后面可以是任何字母、数字、美元符号或下划线。
+
+**关键字**（或者保留字）：是对编译器有特殊意义的固定单词，不能在程序中做其他目的使用。关键字具有专门的意义和用途，和自定义的标识符不同，不能当作一般的标识符来使用。
+
+Java 语言目前定义了 51 个关键字，这些关键字不能作为变量名、类名和方法名来使用。
+
+1. 数据类型：boolean、int、long、short、byte、float、double、char、class、interface。
+2. 流程控制：if、else、do、while、for、switch、case、default、break、continue、return、try、catch、finally。
+3. 修饰符：public、protected、private、final、void、static、strict、abstract、transient、synchronized、volatile、native。
+4. 动作：package、import、throw、throws、extends、implements、this、supper、instanceof、new。
+5. 保留字：true、false、null、goto、const。
