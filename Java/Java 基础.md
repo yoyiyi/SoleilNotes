@@ -161,7 +161,7 @@ String 类是 final 类，不可被继承。
 
 * String ：只读字符串，内容是不能被改变的。
 * StringBuilder：字符串对象可以直接进行修改，Java 5 引入，线程不安全。
-* StringBuffer：字符串对象可以直接进行修改，方法都被 synchronized 修饰，线程安全。
+* StringBuffer：字符串对象可以直接进行修改，方法都被 synchronized 修饰，**线程安全**。
 
 ### 重载（Overload）和重写（Override）的区别，重载的方法能否根据返回类型进行区分？
 
