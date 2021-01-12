@@ -198,7 +198,18 @@ corePoolSize 被设置为 0，即 corePool 为空；maximumPoolSize被设置为 
 
 允许创建的非核心线程数量为 Integer.MAX_VALUE ，可能会创建大量线程，从而导致 OOM。
 
-### 5.4 ScheduledThreadPoolExecutor
+### 5.4  newScheduledThreadPool
+
+创建一个定长线程池，支持定时及周期性任务和延迟任务。
+
+```java
+public static ScheduledExecutorService newScheduledThreadPool(int corePoolSize) {
+      //ScheduledThreadPoolExecutor
+      return new ScheduledThreadPoolExecutor(corePoolSize);
+}
+```
+
+### 5.5 ScheduledThreadPoolExecutor
 
 继承自ThreadPoolExecutor。它主要用来在给定的**延迟**之后运行任务，或**定期**执行任务。
 
