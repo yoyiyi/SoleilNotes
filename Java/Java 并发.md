@@ -363,7 +363,7 @@ public class TestAwait {
 //after
 ```
 
-## 23 线程同步
+## 3 线程同步
 
 ### 3.1 synchronized
 

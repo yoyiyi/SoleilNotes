@@ -109,5 +109,5 @@ public class MainActivity extends AppCompatActivity {
 
 //代理成功了
 //out:
-//01-12 22:54:10.830 1713-1713/com.test.all D/InstrumentationProxy: 这里是Hook点 who：com.test.all.MainActivity@39b11d7
+//05-12 22:54:10.830 1713-1713/com.test.all D/InstrumentationProxy: 这里是Hook点 who：com.test.all.MainActivity@39b11d7
 ```
