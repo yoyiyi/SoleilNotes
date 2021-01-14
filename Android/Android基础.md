@@ -150,7 +150,7 @@ AsyncTask 里面线程池是一个核心线程数为 CPU + 1，最大线程数�
 ### 动画
 
 - View 动画：
-  - 作用对象是 View，可用 xml 定义，建议 xml 比较易读
+  - 作用对象是 View，可用 xml 定义，建议使用 xml 比较易读
   - 四种类型：平移、缩放、旋转、透明度
 - 帧动画：
   - 通过 AnimationDrawable 实现，容易 OOM
@@ -231,3 +231,114 @@ AsyncTask 里面线程池是一个核心线程数为 CPU + 1，最大线程数�
 * 适配不同设备：折叠手机等
 * **网络优化**：5G
 
+### Serialzable 和 Parcelable 的区别？
+
+##### Serializable（Java自带）：
+
+Serializable 是序列化的意思，表示将一个对象转换成存储或可传输的状态。序列化后的对象可以在网络上进传输，也可以存储到本地。
+
+##### Parcelable（android专用）：
+
+除了 Serializable 之外，使用 Parcelable 也可以实现相同的效果，不过不同于将对象进行序列化，Parcelable方式的实现原理是将一个完整的对象进行**分解**，而分解后的每一部分都是Intent所支持的数据类型，这也就实现传递对象的功能了。
+
+作用：
+
+* 永久性保存对象，保存对象的字节序列到本地文件中；
+
+* 通过序列化对象在网络中传递对象；
+
+* 通过序列化在进程间传递对象。
+
+序列化方法的原则
+
+* 在使用内存的时候，Parcelable 比 Serializable 性能高，所以推荐使用 Parcelable。
+
+* Serializable 在序列化的时候会产生大量的临时变量，从而引起频繁的GC。
+
+* Parcelable 不能使用在要将数据存储在磁盘上的情况，因为 Parcelable 不能很好的保证数据的持续性在外界有变化的情况下。尽管 Serializable 效率低点，但此时还是建议使用 Serializable 。
+
+### Json
+
+JSON 的全称是 JavaScript Object Notation，也就是 JavaScript 对象表示法 JSON是存储和交换文本信息的语法，类似XML，但是比XML更小、更快，更易解析 JSON是轻量级的文本数据交换格式，独立于语言，具有可描述性，更易理解，对象可以包含多个名称/值对，比如：
+
+```java
+{"name":"test" , "age":25}
+```
+
+### Android 为每个应用程序分配的内存大小是多少？
+
+不同手机型号，分配的内存大小不同，可以设置  android:largeheap = "true"。
+
+### Activity 的 startActivity 和 context 的 startActivity区别？
+
+* 从 Activity 中启动新的 Activity 时，可以直接 mContext.startActivity(intent) 
+
+*  Context 中启动 Activity 须给 intent 设置Flag:
+
+```java
+intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+```
+
+### 怎么在Service中创建Dialog对话框？
+
+```java
+//设置类型
+dialog.getWindow().setType(WindowManager.LayoutParams.TYPE_SYSTEM_ALERT)
+//权限
+<uses-permission android:name="android.permission.SYSTEM_ALERT_WINOW" />
+```
+
+### 程序A能否接收到程序B的广播？
+
+可以，使用全局的 BroadCastRecevier 能进行跨进程通信，但是注意它只能被动接收广播，此外，LocalBroadCastRecevier 只限于本进程的广播间通信。
+
+### 数据加载更多涉及到分页，你是怎么实现的？
+
+
+
+#### 编译期注解跟运行时注解有何不同？
+
+编译期注解：RetentionPolicy.CLASS，作用域 class 字节码上，生命周期只有在编译器间有效，常使用 APT（注解处理器）+ JavaPoet（Java源代码生成框架），EventBus、Dagger、Retrofit 等使用。
+
+运行时注解：RetentionPolicy.RUNTIME，注解不仅被保存到 class 文件中，jvm 加载 class 文件之后，仍然存在；获取注解，需要通过反射来获取运行时注解。
+
+### 如何解析 xml？
+
+#### SAX
+
+**SAX(Simple API for XML)**：是一种**基于事件的解析器**，事件驱动的流式解析方式，从文件的开始顺序解析到文档的结束，不可暂停或倒退。 
+**优点：**解析速度快，占用内存少。非常适合在 Android 移动设备中使用。 
+**缺点：**不会记录标签的关系，而要让你的应用程序自己处理，这样就增加了你程序的负担。 
+**工作原理：**对文档进行顺序扫描，当扫描到文档(document)开始与结束、元素(element)开始与结束、文档 (document)结束等地方时通知事件处理函数，由事件处理函数做相应动作，然后继续同样的扫描，直至文档结束。 
+
+#### PULL
+
+**PULL：**运行方式和 SAX 类似，都是**基于事件的模**式。不同的是，在 PULL 解析过程中返回的是**数字**，且我们需要自己获取产生的事件然后做相应的操作，而不像 SAX 那样由处理器触发一种事件的方法，执行我们的代码。 
+
+**优点：** PULL解析器小巧轻便，解析速度快，简单易用，非常适合在Android移动设备中使用，Android系统内部在解析各种 XML 时也是用 PULL 解析器，**Android官方推荐开发者们使用Pull解析技术**。Pull解析技术是第三方开发的开源技术，它同样可以应用于 JavaSE 开发。
+
+#### DOM
+
+DOM：即对象文档模型，它是将整个XML文档载入内存(所以效率较低，不推荐使用)，每一个节点当做一个对象，结合代码分析。DOM实现时首先为XML文档的解析定义一组接口，解析器读入整个文档，然后构造一个驻留内存的树结构，这样代码就可以使用DOM接口来操作整个树结构。 由于DOM在内存中以树形结构存放，因此检索和更新效率会更高。**但是对于特别大的文档，解析和加载整个文档将会很耗资源。 当然，如果XML文件的内容比较小，采用DOM是可行的。** 
+**工作原理：**使用DOM对XML文件进行操作时，首先要解析文件，将文件分为独立的元素、属性和注释等，然后以节点树的形式在内存中对XML文件进行表示，就可以通过节点树访问文档的内容，并根据需要修改文档。 
+
+### 更新 UI 方式
+
+- Activity.runOnUiThread(Runnable)
+- Handler
+- View.post(Runnable)，View.postDelay(Runnable, long)（可以理解为在当前操作视图UI线程添加队列）
+- AsyncTask
+- RxJava
+- LiveData
+
+#### merge、ViewStub、include 的作用？
+
+Merge: 删减多余的层级，优化 UI，多用于替换 FrameLayout 或者当一个布局包含另一个时
+
+ViewStub: 按需加载，不会影响 UI 初始化时的性能
+
+include：能够重用布局文件
+
+### jar 和 aar 的区别
+
+jar 包里面只有代码，aar 里面不光有代码还包括资源文件，比如 drawable 文件，xml资源文件。对于一些不常变动的 Android Library，我们可以直接引用 aar，加快编译速度。
