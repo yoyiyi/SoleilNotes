@@ -130,7 +130,11 @@ AsyncTask 是一个抽象的泛型类，提供了 Params（参数类型）、Pro
 
 #### 缺陷
 
-* 生命周期
-* 内存泄漏
-* 结果丢失
+* 生命周期：Activity 销毁之前，没有取消 AsyncTask，有可能让应用崩溃(crash)。
+* 内存泄漏：如果 AsyncTask 被声明 非静态内部类，会保留一个对 Activity 的引用，AsyncTask 的后台线程还在执行，它将继续在内存里保留这个引用，导致 Activity 无法被回收，引起内存泄漏。
+* 结果丢失：屏幕旋转或 Activity 在后台被系统杀掉等情况会导致 Activity 的重新创建，之前运行的 AsyncTask  会持有一个之前 Activity 的引用，这个引用已经无效，这时调用 onPostExecute()再去更新界面将不再生效。
 * 并行还是串行
+  * Android1.6 之前，串行
+  * Android 1.6 之后，采用线程池处理并行任务
+  * 从Android 3.0开始，
+
