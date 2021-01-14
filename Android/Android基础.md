@@ -296,7 +296,7 @@ dialog.getWindow().setType(WindowManager.LayoutParams.TYPE_SYSTEM_ALERT)
 
 
 
-#### 编译期注解跟运行时注解有何不同？
+### 编译期注解跟运行时注解有何不同？
 
 编译期注解：RetentionPolicy.CLASS，作用域 class 字节码上，生命周期只有在编译器间有效，常使用 APT（注解处理器）+ JavaPoet（Java源代码生成框架），EventBus、Dagger、Retrofit 等使用。
 
