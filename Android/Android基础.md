@@ -341,4 +341,279 @@ include：能够重用布局文件
 
 ### jar 和 aar 的区别
 
-jar 包里面只有代码，aar 里面不光有代码还包括资源文件，比如 drawable 文件，xml资源文件。对于一些不常变动的 Android Library，我们可以直接引用 aar，加快编译速度。
+jar 包里面只有代码，aar 里面有代码、资源文件，比如 drawable 文件，xml资源文件。对于一些不常变动的 Android Library，我们可以直接引用 aar，加快编译速度。
+
+### 程序自启动？
+
+```java
+//AndroidManifest.xml
+android:installLocation="internalOnly":表示程序只能被安装在内存中，如果内存为空，则程序将不能成功安装，因为安装在 SD 卡中时会接收不到系统的广播消息(暂时未验证)
+    
+//添加权限
+<uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />    
+//注册广播    
+<!--注册接收系统开机广播消息的广播接收者-->
+<receiver
+    android:name=".broadcastReceiver.MyBroadcastReceiver"
+    android:enabled="true"
+    android:exported="true">
+    <intent-filter>
+        <action android:name="android.intent.action.BOOT_COMPLETED" />
+        <category android:name="android.intent.category.HOME" />
+    </intent-filter>
+</receiver>  
+//高版本基本没用，每个手机厂商都有一个手机管家，可以在里面设置自启动管理           
+```
+
+#### BroadcastReceiver，LocalBroadcastReceiver 区别？
+
+|          | BroadcastReceiver                                            | LocalBroadcastReceiver                       |
+| -------- | ------------------------------------------------------------ | -------------------------------------------- |
+| 应用场景 | 应用之间的传递消息                                           | 应用内部传递消息                             |
+| 安全     | 使用 Content API，本质上它是跨应用的，所以在使用它时必须要考虑到不要被别的应用滥用 | 不需要考虑安全问题，因为它只在应用内部有效。 |
+| 原理     | Binder                                                       | Handler                                      |
+
+### SharedPrefrences 的 apply 和 commit 有什么区别？
+
+* **commit 返回 boolean**，表示修改是否提交成功，apply 没有返回值
+* commit 将数据同步的提交到硬件磁盘，apply 先将修改数据原子提交到内存, 而后异步真正提交到硬件磁盘
+
+### 计算一个view的嵌套层级
+
+```java
+private int getParents(View view){
+    if(view.getParents() == null) 
+        return 0;
+    } else {
+      return (1 + getParents(view.getParents));
+   }
+}
+```
+
+#### Asset 目录与 res 目录的区别？
+
+assets：不会在 R 文件中生成相应标记，存放到这里的资源在打包时会打包到程序安装包中。（通过 AssetManager 类访问这些文件）
+
+res：会在 R 文件中生成 id 标记，资源在打包时如果使用到则打包到安装包中，未用到不会打入安装包中。
+
+### Handler
+
+![](../asset/handler.png)
+
+#### 角色
+
+* Handler : 负责发送并处理消息
+* Looper：：负责关联线程以及消息的分发，在该线程下从 MessageQueue 获取 Message，分发给 Handler ；
+* MessageQueue ：消息队列，负责消息的存储与管理，负责管理由 Handler 发送过来的 Message；
+* Message：消息，封装信息；
+
+#### 原理
+
+- Handler 通过 sendMessage() 发送 Message 到消息队列 MessageQueue。
+- Looper 通过 loop() 不断提取触发条件的Message，并将 Message 交给对应的target handler来处理。
+- target handler调用自身的 handleMessage() 方法来处理 Message。
+
+```java
+//基本使用
+var handler = Handler {}
+handler.sendMessage(msg)
+handler.post(runnable) 
+```
+
+##### Handler 与 Looper 的关联
+
+```kotlin
+//Handler 基本使用
+class LooperThread : Thread() {
+    lateinit var mHandler: Handler
+    override fun run() {
+        Looper.prepare()//创建 Looper
+        mHandler = Handler {
+        }
+        Looper.loop()//不断尝试从 MessageQueue 中获取 Message , 并分发给对应的 Handler
+    }
+}
+
+//Handler 构造方法
+public Handler(Callback callback, boolean async) {
+        ...
+        mLooper = Looper.myLooper();
+        //检查当前线程的 Looper 是否存在    
+        if (mLooper == null) {
+            throw new RuntimeException(
+                "Can't create handler inside thread " + Thread.currentThread()
+                        + " that has not called Looper.prepare()");
+        }
+        //Looper 持有一个 MessageQueue
+        mQueue = mLooper.mQueue;
+        ...
+ }
+```
+
+Handler 跟线程的关联是靠 Looper 来实现的。
+
+##### Message 的存储与管理
+
+Handler post 等方法 最终都会调用 `MessageQueue.enqueueMessage(Message,long)`，所以 Message 由 MessageQueue 存储和管理。
+
+##### Message 的分发与处理
+
+Message  存储和管理之后，就要进行分发与处理，调用 Looper.loop() 。
+
+```java
+    public static void loop() {
+        ...
+        final Looper me = myLooper();
+        ...
+        for (;;) {//死循环 不断从 MessageQueue 获取消息处理
+            Message msg = queue.next(); 
+            if (msg == null) {              
+                return;
+            }
+            final Printer logging = me.mLogging;
+            if (logging != null) {
+                logging.println(">>>>> Dispatching to " + msg.target + " " +
+                        msg.callback + ": " + msg.what);
+            }
+            ...
+            try {
+                //msg.target 就是发送该消息的 Handler 
+                msg.target.dispatchMessage(msg);
+                dispatchEnd = needEndTime ? SystemClock.uptimeMillis() : 0;
+            } finally {
+                if (traceTag != 0) {
+                    Trace.traceEnd(traceTag);
+                }
+            }
+            ...
+            //回收 message    
+            msg.recycleUnchecked();
+        }
+    }
+```
+
+ queue.next()：获取消息
+
+```java
+    Message next() {
+        ...
+        for (;;) {
+             //本地方法      
+            nativePollOnce(ptr, nextPollTimeoutMillis);
+            synchronized (this) {
+                // Try to retrieve the next message.  Return if found.
+                final long now = SystemClock.uptimeMillis();
+                Message prevMsg = null;
+                Message msg = mMessages;
+                if (msg != null && msg.target == null) {                   
+                    do {
+                        prevMsg = msg;
+                        msg = msg.next;
+                    } while (msg != null && !msg.isAsynchronous());
+                }
+                if (msg != null) {
+                    if (now < msg.when) {
+                        // Next message is not ready.  Set a timeout to wake up when it is ready.
+                        nextPollTimeoutMillis = (int) Math.min(msg.when - now, Integer.MAX_VALUE);
+                    } else {
+                        // Got a message.
+                        mBlocked = false;
+                        if (prevMsg != null) {
+                            prevMsg.next = msg.next;
+                        } else {
+                            mMessages = msg.next;
+                        }
+                        msg.next = null;
+                        if (DEBUG) Log.v(TAG, "Returning message: " + msg);
+                        msg.markInUse();
+                        return msg;
+                    }
+                } else {
+                    // No more messages.
+                    nextPollTimeoutMillis = -1;
+                }
+                if (mQuitting) {
+                    dispose();
+                    return null;
+                }
+        }
+    }
+
+```
+
+msg.target 是发送该消息的 Handler，回调该 Handler :
+
+```java
+  public void dispatchMessage(Message msg) {
+        if (msg.callback != null) {//callback 优先级比较高
+            handleCallback(msg);
+        } else {
+            if (mCallback != null) {
+                if (mCallback.handleMessage(msg)) {
+                    return;
+                }
+            }
+            handleMessage(msg);
+        }
+    }
+```
+
+#### 注意
+
+##### 为什么能在主线程直接使用 Handler，而不需要创建 Looper？
+
+ActivityThread.main() 方法中调用了 Looper.prepareMainLooper() 方法创建了 主线程的 Looper ,并且调用了 loop() 方法，所以我们就可以直接使用 Handler 了。
+
+##### Handler 引起的内存泄露？
+
+Handler 允许我们发送延时消息，如果在延时期间用户关闭了 Activity，那么该 Activity 会泄露。 这个泄露是因为 Message 会持有 Handler，而又因为 Java 的特性，内部类会持有外部类，使得 Activity 会被 Handler 持有，这样最终就导致 Activity 泄露。
+
+解决：将 Handler 定义成静态的内部类，在内部持有 Activity 的弱引用，并在Acitivity的onDestroy()中调用handler.removeCallbacksAndMessages(null) 及时移除所有消息。
+
+##### Handler 里藏着的 Callback 能干什么？
+
+优先处理消息的权利。
+
+##### 创建 Message 实例的最佳方式
+
+- 通过 Message 的静态方法 Message.obtain()
+- 通过 Handler 的公有方法 handler.obtainMessage()
+
+##### 主线程的死循环一直运行是不是特别消耗CPU资源呢？
+
+涉及到 Linux pipe/epoll 机制，简单说就是在主线程的 MessageQueue 没有消息时，便阻塞在loop的 queue.next() 中的 nativePollOnce() 方法里，此时主线程会释放 CPU 资源进入休眠状态，直到下个消息到达或者有事务发生，通过往 pipe 管道写端写入数据来唤醒主线程工作。这里采用的 epoll 机制，是一种IO多路复用机制，可以同时监控多个描述符，当某个描述符就绪(读或写就绪)，则立刻通知相应程序进行读或写操作，本质是同步I/O，即读写是阻塞的。所以说，主线程大多数时候都是处于休眠状态，并不会消耗大量CPU资源。
+
+##### handler postDelay这个延迟是怎么实现的？
+
+```java
+//加上当前时间
+SystemClock.uptimeMillis() + delayMillis
+msg.when = when;   
+```
+
+handler.postDelay 并不是先等待一定的时间再放入到MessageQueue中，而是直接进入MessageQueue，以 MessageQueue 的时间顺序排列和唤醒的方式结合实现的。
+
+##### 妙用 Looper 机制
+
+- 将 Runnable post 到主线程执行；
+- 利用 Looper 判断当前线程是否是主线程。
+
+##### 主线程的 Looper 不允许退出
+
+主线程不允许退出，退出就意味 APP 要挂。
+
+##### 子线程里弹 Toast 
+
+```java
+new Thread(new Runnable() {
+  @Override
+  public void run() {
+    Looper.prepare();
+    Toast.makeText(HandlerActivity.this, "test", Toast.LENGTH_SHORT).show();
+    Looper.loop();
+  }
+}).start();
+```
+
+[Handler 都没搞懂，拿什么去跳槽啊？](https://juejin.im/post/5c74b64a6fb9a049be5e22fc#heading-7)
+
