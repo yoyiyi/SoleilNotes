@@ -975,6 +975,16 @@ android {
 
 或者使用 360 加固，配置多渠道打包。
 
+#### Handler、Thread和HandlerThread的差别
+
+* Handler：在 Android 中负责发送和处理消息，线程之间的消息通信。
+
+* Thread：Java进程中执行运算的最小单位，亦即执行处理机调度的基本单位。某一进程中一路单独运行的程序。
+
+* HandlerThread：
+  * 继承自 **Thread**。
+  * 内部实现了 **Looper** ，便于消息的分发。
+
 ### 广播的两种注册方式 ？
 
 * **静态注册**（常驻广播）：在 AndroidManifest.xml 配置 <receive>
@@ -993,3 +1003,10 @@ ddms：davik debug monitor service。简单的说 ddms 是一个**程序执行�
 traceView： 程序性能分析器。traceview 是 ddms 中的一部分内容。
 
 traceview 是 Android 平台特有的数据采集和分析工具，它主要用于分析 Android 中应用程序的 hotspot（瓶颈）。Traceview 本身只是一个数据分析工具，而数据的采集则需要使用 Android SDK 中的 Debug 类或者利用DDMS 工具。二者的用法如下：开发者在一些关键代码段开始前调用 Android SDK 中 Debug 类的 startMethodTracing 函数，并在关键代码段结束前调用 stopMethodTracing 函数。这两个函数运行过程中将采集运行时间内该应用所有线程（注意，只能是 Java线程） 的函数执行情况， 并将采集数据保存到/mnt/sdcard/下的一个文件中。 开发者然后需要利用 SDK 中的 Traceview工具来分析这些数据。
+
+#### 说说ContentProvider、ContentResolver、ContentObserver 之间的关系？
+
+* ContentProvider **内容提供者**：对外提供数据，通过 ContentProvider 把应用中的数据共享给其他应用访问，其他应用可以通过ContentProvider 对你应用中的数据进行添删改查。
+
+* ContentResolver **内容解析者**：按照一定规则访问内容提供者的数据（其实就是调用内容提供者自定义的接口来操作它的数据）。
+* ContentObserver **内容监听器**：监听(捕捉)特定Uri引起的数据库的变化，继而做一些相应的处理，它类似于数据库技术中的触发器(Trigger)，当ContentObserver所观察的Uri发生变化时，便会触发它。
