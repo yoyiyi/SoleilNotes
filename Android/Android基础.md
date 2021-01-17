@@ -1,4 +1,4 @@
-### Activity 生命周期 
+### 1 Activity 生命周期 
 
 * onCreate()：正在被创建，常用来**初始化工作**，比如调用 setContentView 加载界面布局资源，初始化 Activity 所需数据等；
 
@@ -14,7 +14,7 @@
 
 * onDestroy()：即将被销毁，Activity 生命周期中的最后一个回调，常做回收工作、资源释放；
 
-### 横竖屏切换时候 Activity 的生命周期
+### 2 横竖屏切换时候 Activity 的生命周期
 
 * 不设置  **android:configChanges** ，切屏会销毁当前 Activity，重新加载各个生命周期，切横屏时会执行一次，切竖屏时会执行两次。
 
@@ -24,7 +24,7 @@
 * 设置 android:configChanges="orientation|keyboardHidden|screenSize"：切屏不会重新调用各个生命周期，只会执行onConfigurationChanged方法。
 
 
-### ActivityA 跳转 ActivityB 然后 B 按 back 返回 A，各自的生命周期顺序，A 与 B 均不透明？如果B是透明主题的又或是个DialogActivity 呢？
+### 3 ActivityA 跳转 ActivityB 然后 B 按 back 返回 A，各自的生命周期顺序，A 与 B 均不透明？如果B是透明主题的又或是个DialogActivity 呢？
 
 ```java
 A -> B
@@ -41,7 +41,7 @@ B:onStop -> onDestroy
 //A:不会调用 onStop   
 ```
 
-### Android中进程的优先级？
+### 4 Android中进程的优先级？
 
 * 前台进程：与用户正在交互的 Activity 或者 Activity 用到的 Service 等，如果系统内存不足时前台进程是最晚被杀死的。
 * 可见进程：处于暂停状态(onPause)的 Activity 或者绑定在其上的 Service，即被用户可见，但由于失了焦点而不能与用户交互。
@@ -49,7 +49,7 @@ B:onStop -> onDestroy
 * 后台进程：其中运行着执行 onStop 方法而停止的程序，但是却不是用户当前关心的，例如后台挂着的QQ，这时的进程系统一旦没了有内存就首先被杀死。
 * 空进程：不包含任何应用程序的进程，这样的进程系统是一般不会让他存在的。
 
-### Activty 和 Fragmengt 之间怎么通信，Fragmengt 和 Fragmengt怎么通信？
+### 5 Activty 和 Fragmengt 之间怎么通信，Fragmengt 和 Fragmengt怎么通信？
 
 * Handler
 * 广播
@@ -57,15 +57,15 @@ B:onStop -> onDestroy
 * 接口回调
 * Bundle 和 setArguments(bundle)
 
-### onSaveInstanceState()方法的作用 ? 何时会被调用？
+### 6 onSaveInstanceState()方法的作用 ? 何时会被调用？
 
 系统**配置发生改变**时导致 Activity 被杀死并重新创建、资源内存不足导致优先级低的 Activity 被杀死。
 
 系统会调用 onSaveInstanceState 来保存当前 Activity 的状态，此方法调用在onStop之前，与onPause 没有既定的时序关系；
 
-当Activity被重建后，系统会调用 onRestoreInstanceState，并且把 onSaveInstanceState 方法所保存的 Bundle 对象同时传参给 onRestoreInstanceState 和 onCreate()，因此可以通过这两个方法判断Activity 是否被重建 ，调用在 onStart 之后；
+当Activity被重建后，系统会调用 **onRestoreInstanceState**，并且把 onSaveInstanceState 方法所保存的 Bundle 对象同时传参给 onRestoreInstanceState 和 onCreate()，因此可以通过这两个方法判断Activity 是否被重建 ，调用在 onStart 之后；
 
-###  Activity的四种启动模式、应用场景 ？
+###  7 Activity的四种启动模式、应用场景 ？
 
 **standard标准模式**：每次启动一个 Activity 都会重新创建一个新的实例，不管这个实例是否已经存在，此模式的 Activity 默认会进入启动它的 Activity 所属的任务栈中；
 
@@ -75,7 +75,7 @@ B:onStop -> onDestroy
 
 **singleInstance单实例模式**：这是一种加强的 singleTask 模式，具有此种模式的 Activity 只能单独地位于一个任务栈中，且此任务栈中只有唯一一个实例；
 
-### Activity 常用的标记位 Flags？
+### 8 Activity 常用的标记位 Flags？
 
 **FLAG_ACTIVITY_NEW_TASK :** 对应singleTask启动模式；
 
@@ -85,20 +85,20 @@ B:onStop -> onDestroy
 
 **FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS :** 具有这个标记的 Activity 不会出现在历史 Activity 列表中；
 
-### Activity 跟 window，view 之间的关系？
+### 9 Activity 跟 window，view 之间的关系？
 
 window （实现类是 PhoneWindow ）相当于一个容器，里面盛放着很多 view，这些 view 是以树状结构组织起来的。
 
 一个 Activity 对应一个 Window，Activity 本身是没办法处理显示什么控件（view）的，是通过PhoneWindow 进行显示的。
 
-### 如何启动其他应用的 Activity？
+### 10 如何启动其他应用的 Activity？
 
 在保证有权限访问的情况下，通过隐式 Intent 进行目标 Activity 的 **IntentFilter** 匹配，原则是：
 
 - 一个 intent 只有同时匹配某个 Activity 的 intent-filter 中的 action、category、data 才算完全匹配，才能启动该Activity；
 - 一个 Activity 可以有多个 intent-filter，一个 intent 只要成功匹配任意一组 intent-filter，就可以启动该Activity；
 
-### 什么是 ANR？ 如何避免？
+### 11 什么是 ANR？ 如何避免？
 
 应用程序有一段时间响应不够灵敏，系统会向用户显示一个对话框，这个对话框称作应用程序无响应（ANR：Application Not Responding）对话框。用户可以选择让程序继续运行，但是，用户在使用应用程序时，并不希望每次都要处理这个对话框。因此，在程序里对响应性能的设计很重要，这样，系统不会显示 ANR 给用户。
 
@@ -122,7 +122,7 @@ window （实现类是 PhoneWindow ）相当于一个容器，里面盛放着很
 * 使用 Handler 线程之间的通信，而不是使用 Object.wait() 或者 Thread.sleep() 来阻塞主线程
 * onCreate 和 onResume 回调中尽量避免耗时的代码
 
-### AsyncTask 的缺陷和问题，说说他的原理？
+### 12 AsyncTask 的缺陷和问题，说说他的原理？
 
 AsyncTask 是一种**轻量级的异步任务类**，可以在线程池中执行后台任务，然后把执行的进度和最终结果传递给主线程并主线程中更新 UI，通过 AsyncTask 可以更加方便执行后台任务以及在主线程中访问 UI，但是 AsyncTask 并不适合进行特别耗时的后台任务，对于特别耗时的任务来说，建议使用线程池。
 
@@ -147,7 +147,7 @@ AsyncTask 里面线程池是一个核心线程数为 CPU + 1，最大线程数�
   * Android 1.6 之后，采用线程池处理并行任务
   * 从Android 3.0开始，一个线程来串行执行任务。可以使用 executeOnExecutor() 方法来并行地执行任务。
 
-### 动画
+### 13 动画
 
 - View 动画：
   - 作用对象是 View，可用 xml 定义，建议使用 xml 比较易读
@@ -175,11 +175,11 @@ AsyncTask 里面线程池是一个核心线程数为 CPU + 1，最大线程数�
   - 插值器：根据时间的流逝的百分比来计算属性改变的百分比
   - 估值器：根据插值器的结果计算出属性变化了多少数值
 
-### Bundle 传递对象为什么需要序列化？
+### 14 Bundle 传递对象为什么需要序列化？
 
 为 bundle 传递数据时，只支持基本数据类型，所以在传递数据时，要将对象序列化转化成可以存储或者可以传输的本质状态，即**字节流**。序列化后的对象可以在网络，页面之间传递，也可以存储到本地。
 
-### Android 各版本新版本
+### 15 Android 各版本新版本
 
 #### Android5.0
 
@@ -231,7 +231,7 @@ AsyncTask 里面线程池是一个核心线程数为 CPU + 1，最大线程数�
 * 适配不同设备：折叠手机等
 * **网络优化**：5G
 
-### Serialzable 和 Parcelable 的区别？
+### 16 Serialzable 和 Parcelable 的区别？
 
 ##### Serializable（Java自带）：
 
@@ -257,7 +257,7 @@ Serializable 是序列化的意思，表示将一个对象转换成存储或可�
 
 * Parcelable 不能使用在要将数据存储在磁盘上的情况，因为 Parcelable 不能很好的保证数据的持续性在外界有变化的情况下。尽管 Serializable 效率低点，但此时还是建议使用 Serializable 。
 
-### Json
+### 17 Json
 
 JSON 的全称是 JavaScript Object Notation，也就是 JavaScript 对象表示法 JSON是存储和交换文本信息的语法，类似XML，但是比XML更小、更快，更易解析 JSON是轻量级的文本数据交换格式，独立于语言，具有可描述性，更易理解，对象可以包含多个名称/值对，比如：
 
@@ -265,11 +265,11 @@ JSON 的全称是 JavaScript Object Notation，也就是 JavaScript 对象表示
 {"name":"test" , "age":25}
 ```
 
-### Android 为每个应用程序分配的内存大小是多少？
+### 18 Android 为每个应用程序分配的内存大小是多少？
 
 不同手机型号，分配的内存大小不同，可以设置  android:largeheap = "true"。
 
-### Activity 的 startActivity 和 context 的 startActivity区别？
+### 19 Activity 的 startActivity 和 context 的 startActivity区别？
 
 * 从 Activity 中启动新的 Activity 时，可以直接 mContext.startActivity(intent) 
 
@@ -279,7 +279,7 @@ JSON 的全称是 JavaScript Object Notation，也就是 JavaScript 对象表示
 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 ```
 
-### 怎么在Service中创建Dialog对话框？
+### 20 怎么在Service中创建Dialog对话框？
 
 ```java
 //设置类型
@@ -288,21 +288,21 @@ dialog.getWindow().setType(WindowManager.LayoutParams.TYPE_SYSTEM_ALERT)
 <uses-permission android:name="android.permission.SYSTEM_ALERT_WINOW" />
 ```
 
-### 程序A能否接收到程序B的广播？
+### 21 程序A能否接收到程序B的广播？
 
 可以，使用全局的 BroadCastRecevier 能进行跨进程通信，但是注意它只能被动接收广播，此外，LocalBroadCastRecevier 只限于本进程的广播间通信。
 
-### 数据加载更多涉及到分页，你是怎么实现的？
+### 22 数据加载更多涉及到分页，你是怎么实现的？
 
+一般 20 为一页，滑动到底部，监听滑动事件，加载更多。
 
-
-### 编译期注解跟运行时注解有何不同？
+### 23 编译期注解跟运行时注解有何不同？
 
 编译期注解：RetentionPolicy.CLASS，作用域 class 字节码上，生命周期只有在编译器间有效，常使用 APT（注解处理器）+ JavaPoet（Java源代码生成框架），EventBus、Dagger、Retrofit 等使用。
 
 运行时注解：RetentionPolicy.RUNTIME，注解不仅被保存到 class 文件中，jvm 加载 class 文件之后，仍然存在；获取注解，需要通过反射来获取运行时注解。
 
-### 如何解析 xml？
+### 24 如何解析 xml？
 
 #### SAX
 
@@ -322,7 +322,7 @@ dialog.getWindow().setType(WindowManager.LayoutParams.TYPE_SYSTEM_ALERT)
 DOM：即对象文档模型，它是将整个XML文档载入内存(所以效率较低，不推荐使用)，每一个节点当做一个对象，结合代码分析。DOM实现时首先为XML文档的解析定义一组接口，解析器读入整个文档，然后构造一个驻留内存的树结构，这样代码就可以使用DOM接口来操作整个树结构。 由于DOM在内存中以树形结构存放，因此检索和更新效率会更高。**但是对于特别大的文档，解析和加载整个文档将会很耗资源。 当然，如果XML文件的内容比较小，采用DOM是可行的。** 
 **工作原理：**使用DOM对XML文件进行操作时，首先要解析文件，将文件分为独立的元素、属性和注释等，然后以节点树的形式在内存中对XML文件进行表示，就可以通过节点树访问文档的内容，并根据需要修改文档。 
 
-### 更新 UI 方式
+### 25 更新 UI 方式
 
 - Activity.runOnUiThread(Runnable)
 - Handler
@@ -331,19 +331,11 @@ DOM：即对象文档模型，它是将整个XML文档载入内存(所以效率�
 - RxJava
 - LiveData
 
-#### merge、ViewStub、include 的作用？
-
-Merge: 删减多余的层级，优化 UI，多用于替换 FrameLayout 或者当一个布局包含另一个时
-
-ViewStub: 按需加载，不会影响 UI 初始化时的性能
-
-include：能够重用布局文件
-
-### jar 和 aar 的区别
+### 26 jar 和 aar 的区别
 
 jar 包里面只有代码，aar 里面有代码、资源文件，比如 drawable 文件，xml资源文件。对于一些不常变动的 Android Library，我们可以直接引用 aar，加快编译速度。
 
-### 程序自启动？
+### 27 程序自启动？
 
 ```java
 //AndroidManifest.xml
@@ -365,7 +357,7 @@ android:installLocation="internalOnly":表示程序只能被安装在内存中�
 //高版本基本没用，每个手机厂商都有一个手机管家，可以在里面设置自启动管理           
 ```
 
-#### BroadcastReceiver，LocalBroadcastReceiver 区别？
+### 28 BroadcastReceiver，LocalBroadcastReceiver 区别？
 
 |          | BroadcastReceiver                                            | LocalBroadcastReceiver                       |
 | -------- | ------------------------------------------------------------ | -------------------------------------------- |
@@ -373,12 +365,12 @@ android:installLocation="internalOnly":表示程序只能被安装在内存中�
 | 安全     | 使用 Content API，本质上它是跨应用的，所以在使用它时必须要考虑到不要被别的应用滥用 | 不需要考虑安全问题，因为它只在应用内部有效。 |
 | 原理     | Binder                                                       | Handler                                      |
 
-### SharedPrefrences 的 apply 和 commit 有什么区别？
+### 29 SharedPrefrences 的 apply 和 commit 有什么区别？
 
 * **commit 返回 boolean**，表示修改是否提交成功，apply 没有返回值
 * commit 将数据同步的提交到硬件磁盘，apply 先将修改数据原子提交到内存, 而后异步真正提交到硬件磁盘
 
-### 计算一个view的嵌套层级
+### 30 计算一个view的嵌套层级
 
 ```java
 private int getParents(View view){
@@ -390,13 +382,13 @@ private int getParents(View view){
 }
 ```
 
-#### Asset 目录与 res 目录的区别？
+### 31 Asset 目录与 res 目录的区别？
 
 assets：不会在 R 文件中生成相应标记，存放到这里的资源在打包时会打包到程序安装包中。（通过 AssetManager 类访问这些文件）
 
 res：会在 R 文件中生成 id 标记，资源在打包时如果使用到则打包到安装包中，未用到不会打入安装包中。
 
-### Handler
+### 32 Handler
 
 ![](../asset/handler.png)
 
@@ -617,12 +609,387 @@ new Thread(new Runnable() {
 
 [Handler 都没搞懂，拿什么去跳槽啊？](https://juejin.im/post/5c74b64a6fb9a049be5e22fc#heading-7)
 
-#### 硬件加速？
+### 33 硬件加速
 
-使用 GPU 实现图形绘制，通过底层软件代码，将 CPU 不擅长的图形计算转换成GPU专用指令，由GPU完成。
+使用 GPU 实现图形绘制，通过底层软件代码，将 CPU 不擅长的图形计算转换成 GPU 专用指令，由GPU完成。
 
 - CPU更擅长复杂逻辑控制，而GPU得益于大量ALU和并行结构设计，更擅长数学运算。
 - 页面由各种基础元素（DisplayList）构成，渲染时需要进行大量浮点运算。
 - 硬件加速条件下，CPU用于控制复杂绘制逻辑、构建或更新DisplayList；GPU用于完成图形计算、渲染DisplayList。
 - 硬件加速条件下，刷新界面尤其是播放动画时，CPU只重建或更新必要的DisplayList，进一步提高渲染效率。
 - 实现同样效果，应尽量使用更简单的DisplayList，从而达到更好的性能（Shape代替Bitmap等）。
+
+### 34 Android 中 HashMap 的优化
+
+* SpareArray
+
+```java
+//避免了对key的自动装箱,两个数组来进行数据存储的，一个存储key，另外一个存储value,查找使用二分查找法
+private int[] mKeys;
+private Object[] mValues;
+```
+
+* ArrayMap：
+
+* <key,value> 映射的数据结构，类似于 SpareArray
+
+如果 key 类型为 int 建议使用 SpareArray，类似 LongSparseMap。
+
+如果 key 类型为其他类型，则使用 ArrayMap。
+
+注意：SparseArray、ArrayMap  在增加、查找、删除都需要使用 二分查找法，数据量大，效率会低。
+
+### 35 Android 适配方案
+
+* 布局适配
+  * 布局自适应屏幕尺寸：使用相对布局（RelativeLayout），禁用绝对布局（AbsoluteLayout）
+  * 根据屏幕的配置来加载相应的 UI 布局
+    * 尺寸限定符
+      * 例如有一个平板，可以使用：res/layout-large/main.xml ，只适合Android 3.2版本前
+    * 最小宽度限定符：例如 layout-sw600dp 的最小宽度限定符，只适合Android 3.2版本后
+    * 布局别名
+    * 屏幕方向限定符
+  * 使用 sp、dp
+  * 屏幕尺寸和屏幕密度之间适配（以某一分辨率为基准，生成所有分辨率对应像素数列表）
+* 布局组件适配：使得布局组件自适应屏幕尺寸：wrap_content、match_parent、weight 
+* 图片资源适配：图片资源组件自适应屏幕尺寸 ：.9.png 、只切一套图 xhdpi
+* 用户界面流程适配：根据屏幕的配置来加载相应的用户界流程
+  * 确定当前布局
+  * 根据当前布局做出响应
+  * 重复使用其他活动中的片段
+  * 处理屏幕配置变化
+
+* 推荐：今日头条的适配方案：**动态更改 density**
+
+```java
+px:像素   px = dp * (dpi / 160) 
+dp:设备独立像素
+dpi:像素密度 dpi = 根号(宽^2 + 高^2) / 屏幕尺寸(inch)
+
+//基本公式
+px = dp * density;
+density = dpi / 160;
+px = dp * (dpi / 160);    
+```
+
+```java
+private static void adaptScreen(final Activity activity,
+                                    final int sizeInPx,
+                                    final boolean isVerticalSlide) {
+        final DisplayMetrics systemDm = Resources.getSystem().getDisplayMetrics();
+        final DisplayMetrics appDm = App.getAppContext().getResources().getDisplayMetrics();
+        final DisplayMetrics activityDm = activity.getResources().getDisplayMetrics();
+        if (isVerticalSlide) {
+            activityDm.density = activityDm.widthPixels / (float) sizeInPx;
+        } else {
+            activityDm.density = activityDm.heightPixels / (float) sizeInPx;
+        }
+        activityDm.scaledDensity = activityDm.density * (systemDm.scaledDensity / systemDm.density);
+        activityDm.densityDpi = (int) (160 * activityDm.density);
+        appDm.density = activityDm.density;
+        appDm.scaledDensity = activityDm.scaledDensity;
+        appDm.densityDpi = activityDm.densityDpi;
+    }
+//假如要使用第三方的UI界面的时候，重新设置为系统的density即可
+public static void cancelAdaptScreen(final Activity activity) {
+        final DisplayMetrics systemDm = Resources.getSystem().getDisplayMetrics();
+        final DisplayMetrics appDm = App.getAppContext().getResources().getDisplayMetrics();
+        final DisplayMetrics activityDm = activity.getResources().getDisplayMetrics();
+        activityDm.density = systemDm.density;
+        activityDm.scaledDensity = systemDm.scaledDensity;
+        activityDm.densityDpi = systemDm.densityDpi;
+        appDm.density = systemDm.density;
+        appDm.scaledDensity = systemDm.scaledDensity;
+        appDm.densityDpi = systemDm.densityDpi;
+    }
+```
+
+[Android 屏幕适配：最全面的解决方案](https://www.jianshu.com/p/ec5a1a30694b)
+
+### 36 显式 Intent 和隐式 Intent
+
+显式 Intent，明确指出目标组件的名称
+
+```java
+ bt.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(MainActivity.this,secondActivity.class);
+                startActivity(intent);
+            }
+        });
+```
+
+隐式 Intent，没有明确指出目标组件名称，intent-filter
+
+* 动作(Action)
+
+* 类别(Category ['kætɪg(ə)rɪ] )
+
+* 数据(Data )
+
+```java
+<activity android:name=".secondActivity">
+            <intent-filter>
+                <action android:name="com.example.aries.androidtest.ACTION_START"></action>
+                <category android:name="android.intent.category.DEFAULT"></category>
+            </intent-filter>
+</activity>
+```
+
+### 37 广播传输的数据是否有限制，是多少，为什么要限制？
+
+广播传输的数据一般经过 IPC，Intent 在传递数据时是有大小限制的，大约限制在 **1MB** 之内，IPC 需要把数据从内核copy到进程中，每一个进程有一个接收内核数据的缓冲区，默认是1M；如果一次传递的数据超过限制，就会出现异常。
+
+### 38 安卓签名机制？
+
+* 应用程序升级，验证 APP 的**唯一性**，包名和签名都一致才能升级
+
+* 应用程序模块化，可以模块化部署多个应用到一个进程，只要他们的签名都一样
+
+* 代码或者数据共享，同一个签名有相同的权限，可以共享数据和代码
+
+### 39 merge、ViewStub、include 的作用？
+
+merge: 删减多余的层级，优化 UI，多用于替换 FrameLayout 或者当一个布局包含另一个
+
+ViewStub: 按需加载，不会影响 UI 初始化时的性能
+
+include：重用布局文件
+
+### 40 ContentProvider 使用
+
+内容提供器，调用 Context 的 **getContentResolver** 方法。
+
+```java
+Uri uri = Uri.parse("content:xxx/xxx");
+Cursor cursor = getContentResolver().query(uri,new String[]{"author","price"},
+        "name=?",new String[]{"Java"},null);
+if(cursor.moveToFirst()){
+    do{
+        Log.d("MainActivity",cursor.getString(cursor.getColumnIndex("name")));
+        Log.d("MainActivity",cursor.getString(cursor.getColumnIndex("price")));
+    }while(cursor.moveToNext());
+}
+cursor.close()
+```
+
+### 41 Android 怎么加速启动 Activity？
+
+* 优化布局，不要嵌套太多
+* 主线程不要做太多的耗时工作
+
+### 42 Json 解析方式的两种区别？
+
+* JSONArray、JSONObject
+* Gson
+
+### 43 Fragment懒加载
+
+* support 版本中利用 setUserVisibleHint 和  onHiddenChanged
+
+```java
+public class LazyLoadFragment extends Fragment {
+    //判断是否已进行过加载，避免重复加载
+    private boolean isLoad=false;
+    //判断当前fragment是否可见
+    private boolean isVisibleToUser = false;
+    //判断当前fragment是否回调了resume
+    private boolean isResume = false;
+    private boolean isCallUserVisibleHint = false;
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        isResume=true;
+        if (!isCallUserVisibleHint) isVisibleToUser=!isHidden();
+        lazyLoad();
+    }
+
+    @Override
+    public void setUserVisibleHint(boolean isVisibleToUser) {
+        super.setUserVisibleHint(isVisibleToUser);
+        Log.i(TAG, “setUserVisibleHint: “+isVisibleToUser+”  “+FragmentD.this);
+        this.isVisibleToUser=isVisibleToUser;
+        isCallUserVisibleHint=true;
+        lazyLoad();
+    }
+
+    @Override
+    public void onHiddenChanged(boolean hidden) {
+        super.onHiddenChanged(hidden);
+        Log.i(TAG, "onHiddenChanged: "+hidden+" "+FragmentD.this);
+        isVisibleToUser=!hidden;
+        lazyLoad();
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        isLoad=false;
+        isCallUserVisibleHint=false;
+        isVisibleToUser=false;
+        isResume=false;
+    }
+
+    private void lazyLoad() {
+        if (!isLoad&&isVisibleToUser&&isResume){
+            //懒加载。。。
+            isLoad=true;
+        }
+    }
+```
+
+* Androidx 版本。
+
+ 在 Androidx 在 FragmentTransaction 中增加了 setMaxLifecycle 方法来控制 Fragment 所能调用的最大的生命周期函数，该方法可以设置活跃状态下 Fragment 最大的状态，如果该 Fragment 超过了设置的最大状态，那么会强制将 Fragment 降级到正确的状态。
+
+ViewPager+Fragment: 在 FragmentPagerAdapter 与 FragmentStatePagerAdapter 新增了含有 **behavior** 字段的构造函数。
+
+```java
+public class LazyLoadFragment extends Fragment {
+    //判断是否已进行过加载，避免重复加载
+    private boolean isLoad=false;
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (!isLoad&& !isHidden()){
+            lazyLoad();
+            isLoad=true;
+        }
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        isLoad=false;
+    }
+
+    private void lazyLoad() {
+            //懒加载。。。
+    }
+}
+```
+
+[Android Fragment 懒加载](https://www.cnblogs.com/Robin132929/p/13819386.html)
+
+### 44 Bitmap 使用时候注意什么？
+
+* 要选择合适的图片规格（bitmap类型）：
+
+```
+ALPHA_8   每个像素占用1byte内存        
+ARGB_4444 每个像素占用2byte内存       
+ARGB_8888 每个像素占用4byte内存（默认）      
+RGB_565 每个像素占用2byte内存
+```
+
+* 降低采样率。**BitmapFactory.Options** 参数 inSampleSize 的使用，先把 options.inJustDecodeBounds 设为 true，只是去读取图片的大小，在拿到图片的大小之后和要显示的大小做比较通过 calculateInSampleSize() 函数计算 inSampleSize 的具体值，得到值之后。options.inJustDecodeBounds 设为 false 读图片资源。
+
+* 复用内存。通过软引用，复用内存块，不需要再重新给这个 bitmap 申请一块新的内存，避免了一次内存的分配和回收，从而改善了运行效率。
+
+* 使用 recycle() 方法及时回收内存。
+
+* 压缩图片
+
+### 45 多进程场景遇见过么？
+
+* 音乐播放器
+* 大图查看
+* 多模块应用等
+
+#### Activity、Intent、Service 是什么关系
+
+Activity 和 Service 都是 Android 四大组件之一。都是 Context 类的子类 **ContextWrapper** 的子类。
+
+* Activity 负责用户界面的显示和交互。
+* Service 负责后台任务的处理。
+* Activity 和 Service 之间可以通过 Intent 传递数据，可以把 Intent 看作是通信使者。
+
+### Bitmap 的 recycler()
+
+ Android 有自己的垃圾回收机制，如果只使用了少量的图片，回收与否关系不大。可是若有大量的 bitmap 需要垃圾回收，那么垃圾回收的次数过于频繁，会造成系统资源负荷，这时候还是调用 recycler() 比较好。
+
+通过源码可以了解到，加载Bitmap到内存里以后，是包含**两部分内存区域**的。简单的说，一部分是**Java部分**的，一部分是**C部分**的。这个Bitmap对象是由Java部分分配的，不用的时候系统就会自动回收了
+
+但是那个对应的**C可用**的内存区域，虚拟机是不能直接回收的，这个只能调用底层的功能释放。所以需要调用recycle()方法来释放C部分的内存
+
+bitmap.recycle()方法用于回收该Bitmap所占用的内存，接着将bitmap置空，最后使用System.gc()调用一下系统的垃圾回收器进行回收，调用System.gc()并不能保证立即开始进行回收过程，而只是为了加快回收的到来。
+
+### 一张Bitmap所占内存以及内存占用的计算
+
+```java
+Bitamp 所占内存大小 = 宽度像素 *（inTargetDensity / inDensity）* 高度像素 *（inTargetDensity / inDensity）* 一个像素所占的内存字节大小 
+```
+
+注：这里 inDensity 表示目标图片的dpi（放在哪个资源文件夹下），inTargetDensity表示目标屏幕的dpi，所以你可以发现inDensity和inTargetDensity会对Bitmap的宽高进行拉伸，进而改变Bitmap占用内存的大小。
+
+在Bitmap里有两个获取内存占用大小的方法。 
+
+- **getByteCount()**：API12 加入，代表存储 Bitmap 的像素需要的最少内存。
+- **getAllocationByteCount()**：API19 加入，代表在内存中为 Bitmap 分配的内存大小，代替了 getByteCount() 方法。
+- 在**不复用 Bitmap** 时，getByteCount() 和 getAllocationByteCount 返回的结果是一样的。在通过**复用 Bitmap** 来解码图片时，那么 getByteCount() 表示新解码图片占用内存的大 小，getAllocationByteCount() 表示被复用 Bitmap 真实占用的内存大小
+
+### 数据库升级增加表和删除表都不涉及数据迁移，但是修改表涉及到对原有数据进行迁移,如何实现？
+
+* 将现有表命名为临时表 
+* 创建新表
+* 将临时表的数据导入新表
+* 删除临时表
+
+### Canvas.save() 跟 Canvas.restore()的区别
+
+* Canvas.save()：来保存 Canvas 的状态。save 之后，可以调用 Canvas 的平移、放缩、旋转、错切、裁剪等操作。
+* Canvas.restore()：用来恢复 Canvas 之前保存的状态。防止 save 后对 Canvas 执行的操作对后续的绘制有影响。
+
+save 和 restore 要配对使用，**restore 次数 <= save 少**
+
+### 为什么bindService可以跟Activity生命周期联动？
+
+* bindService 方法执行时，**LoadedApk** 会记录 **ServiceConnection 信息**。
+
+* Activity 执行 finish 方法时，会通过 LoadedApk 检查 Activity 是否存在未注销/解绑的 BroadcastReceiver 和 ServiceConnection，如果有，那么会通知 AMS 注销/解绑对应的 BroadcastReceiver 和 Service，并打印异常信息，告诉用户应该主动执行注销/解绑的操作。
+
+### 自定义 view 效率高于xml定义吗？说明理由。
+
+不一定，如果自定义 view 计算复杂，可能效率不一定高，但是一般情况下，自定义 view 效率高于 xml 定义。
+
+* 少了解析 xml
+* 自定义 View 减少了 ViewGroup 与 View之间的测量，包括父量子，子量自身，子在父中位置摆放，当子 view变化时,父的某些属性都会跟着变化
+
+### Gradle 配置多渠道打包
+
+我们使用友盟多渠道打包。
+
+```java
+android {  
+    productFlavors {
+        xiaomi {}
+        baidu {}
+        wandoujia {}
+        _360 {}        // 或“"360"{}”，数字需下划线开头或加上双引号
+    }
+}
+```
+
+或者使用 360 加固，配置多渠道打包。
+
+### 广播的两种注册方式 ？
+
+* **静态注册**（常驻广播）：在 AndroidManifest.xml 配置 <receive>
+  * 常驻，不受任何组件的生命周期影响
+  * 如果程序被关闭，如果有信息广播来，程序依旧会被系统调用
+  * 需要时刻监听广播
+* **动态注册**（非常驻广播）：Context.registerReceiver()
+  * 非常驻，灵活，跟随组建的生命周期变化
+  * 不需要特定时刻监听广播
+  * 当用来注册的 Activity 关掉后，广播也就失效了。
+
+#### ddms 和 traceView 的区别？
+
+ddms：davik debug monitor service。简单的说 ddms 是一个**程序执行查看器**，在里面可以看见线程和堆栈等信息。
+
+traceView： 程序性能分析器。traceview 是 ddms 中的一部分内容。
+
+traceview 是 Android 平台特有的数据采集和分析工具，它主要用于分析 Android 中应用程序的 hotspot（瓶颈）。Traceview 本身只是一个数据分析工具，而数据的采集则需要使用 Android SDK 中的 Debug 类或者利用DDMS 工具。二者的用法如下：开发者在一些关键代码段开始前调用 Android SDK 中 Debug 类的 startMethodTracing 函数，并在关键代码段结束前调用 stopMethodTracing 函数。这两个函数运行过程中将采集运行时间内该应用所有线程（注意，只能是 Java线程） 的函数执行情况， 并将采集数据保存到/mnt/sdcard/下的一个文件中。 开发者然后需要利用 SDK 中的 Traceview工具来分析这些数据。

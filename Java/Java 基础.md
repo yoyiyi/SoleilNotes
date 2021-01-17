@@ -255,6 +255,15 @@ public class MyUtils {
 
 可以
 
+### 断点续传
+
+断点续传就是在上一次下载断开的位置开始继续下载。 HTTP 协议中， 可以在请求报文头中加入 Range 段， 来表示客户机希望从何处继续下载。  HTTP/1.1 开始就支持了（这也是分快传输的实现）。 一般断点下载时才用到 **Range 和 Content-Range** 实体头，断线续传的 HTTP 状态码是 206。
+
+使用 Java 可以类似以下：
+
+* setRequestProperty("Range","bytes=startIndex-endIndex");告诉服务器，数据从哪里开始，到哪里结束。
+* 客户端使用 RandomAccessFile 的 seek() 在任意位置写入操作
+
 ### Java 中的final关键字有哪些用法？
 
 * 修饰类：该类不能被继承；
@@ -413,3 +422,5 @@ Java 语言目前定义了 51 个关键字，这些关键字不能作为变量�
 3. 修饰符：public、protected、private、final、void、static、strict、abstract、transient、synchronized、volatile、native。
 4. 动作：package、import、throw、throws、extends、implements、this、supper、instanceof、new。
 5. 保留字：true、false、null、goto、const。
+
+广播传输的数据是否有限制，是多少，为什么要限制？
