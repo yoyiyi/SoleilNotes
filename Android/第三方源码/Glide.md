@@ -513,7 +513,7 @@ active resources（Map[Key, WeakReference]）
   public class LruResourceCache extends LruCache<Key, Resource<?>> implements MemoryCache 
   ```
 
-* active resourcesd：弱引用
+* activeResources：弱引用，存放正在使用的资源，资源内部有被引用的记录
 
   ```java
   private final Map<Key, WeakReference<EngineResource<?>>> activeResources;
@@ -521,6 +521,11 @@ active resources（Map[Key, WeakReference]）
 
 通过load() 来加载图片，加载前后会做内存存储的逻辑。如果内存缓存中没有，那么才会使用 EngineJob 来进行异步获取硬盘资源或网络资源。EngineJob类似一个异步线程或observable。Engine是一个全局唯一的，通过Glide.getEngine()来获取。
 
-需要一个图片资源，假设Lruche中相应的资源图片，那么就就返回相应资源，同时从Lruche中清除，放到activeResources中。activeResources map是盛放正在使用的资源，以弱引用的形式存在。同时资源内部有被引用的记录。如果资源没有引用记录了，那么再放回Lruche中，同时从activeResources中清除。需要一个图片资源如果Lruche中没有，就从activeResources中找，找到后相应资源的引用加1。如果Lruche和activeResources中没有，那么进行资源异步请求（网络/diskLrucache），请求成功后，资源放到diskLrucache和activeResources中。
+总结：
+
+* 需要一个图片资源，如果 LruCache 中有相应的资源图片，就返回相应资源，同时从 LruCache 中清除，放到activeResources 中
+* activeResources map 如果资源没有引用记录了，那么再放回 LruCache 中，同时从 activeResources 中清除。
+* 如果 LruCache 中没有，就从 activeResources 中找，找到后相应资源的引用加1。
+* 如果 LruCache  和 activeResources 中没有，那么进行资源异步请求（网络 / diskLrucache），请求成功后，资源放到 diskLrucache 和a ctiveResources 中。
 
 用一个弱引用map activeResources来盛放项目中正在使用的资源。Lruche中不含有正在使用的资源。资源内部有个计数器来显示自己是不是还有被引用的情况（当然这里说的被项目中使用/引用不包括被Lruche/activeResources引用）。把正在使用的资源和没有被使用的资源分开有什么好处呢？假如突然某一个时刻，我想清空内存的Lruche，我直接就可以清空它，因为Lruche中的资源都没有被项目中使用，这时候我直接让Lruche所有资源置为null，那么所有资源就被清空了，可以安全的执行bitmap.recycle()。而常规的三层缓存机制中的Lruche有可能有些资源还被项目中使用，这时候不能直接把bitmap.recycle()。项目中还有对某些资源的引用，所以即使Lruche中的资源置为null。资源也不会清空。activeResources为什么使用弱引用。首先不用担心正在被项目使用的资源因为gc而被回收。引用项目中使用/引用了（是强引用）,那么gc时是不会回收这些资源的。只有所有强引用都不存在了且只有弱引用，那么才会gc时回收。所以这里activeResources使用弱引用是因为有些资源没有被项目使用了但是也没有被重新放到Lruche中，就会在gc时回收，不过这样的资源回收是少数场景。资源回收的大部分发生场景还是根据Lruche的Lru算法（最近最少使用）来清除相应资源。
