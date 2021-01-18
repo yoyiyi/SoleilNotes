@@ -425,5 +425,102 @@ private DataFetcherGenerator getNextGenerator() {
       runGenerators();
     }
   }
+
+
+//EngineJob#onResourceReady
+@Override
+public void onResourceReady(Resource<R> resource, DataSource   dataSource) {
+  this.resource = resource;
+  this.dataSource = dataSource;
+  MAIN_THREAD_HANDLER.obtainMessage(MSG_COMPLETE, this).sendToTarget();
+}
+
+private static class MainThreadCallback implements Handler.Callback{
+    ...
+    @Override
+    public boolean handleMessage(Message message) {
+      EngineJob<?> job = (EngineJob<?>) message.obj;
+      switch (message.what) {
+        case MSG_COMPLETE:
+          //通过主线程 Handler 对象进行切换线程，然后在主线程调用了
+          job.handleResultOnMainThread();
+          break;
+        ...
+      }
+      return true;
+    }
+}
+
+//EngineJob#handleResultOnMainThread
+ @Synthetic
+  void handleResultOnMainThread() {
+    ...
+    //回调上一层接口，这个接口回调到了 Engine 中
+    listener.onEngineJobComplete(this, key, engineResource);
+    for (int i = 0, size = cbs.size(); i < size; i++) {
+      ResourceCallback cb = cbs.get(i);
+      if (!isInIgnoredCallbacks(cb)) {
+        engineResource.acquire();
+        //回调 onResourceReady，回调到了 SingleRequest
+        cb.onResourceReady(engineResource, dataSource);
+      }
+    }
+     //释放资源
+    engineResource.release();
+    release(false /*isRemovedFromQueue*/);
+  }
+
+
+
+ //SingleRequest#onResourceReady
+  private void onResourceReady(Resource<R> resource, R result, DataSource dataSource) {
+      ...
+      if (!anyListenerHandledUpdatingTarget) {
+        Transition<? super R> animation =
+            animationFactory.build(dataSource, isFirstResource);
+        //回调 ImageViewTarget 类的 onResourceReady()
+        target.onResourceReady(result, animation);
+      }
+    }
+    notifyLoadSuccess();
+  }
+
+//ImageViewTarget#onResourceReady
+  @Override
+  public void onResourceReady(@NonNull Z resource, @Nullable Transition<? super Z> transition) {
+    if (transition == null || !transition.transition(resource, this)) {
+      setResourceInternal(resource);
+    } else {
+      maybeUpdateAnimatable(resource);
+    }
+  }
+   
+ //最后Bitmap 对象经过给中处理 调用 setResource 
+  protected void setResource(Bitmap resource) {
+     view.setImageBitmap(resource);
+  } 
 ```
 
+## 5 Glide 中三层缓存机制
+
+三层存储的机制在 Engine 中实现的。Engine 这一层负责加载时做**管理内存缓存**的逻辑。持有 MemoryCache 、
+
+active resources（Map[Key, WeakReference]）
+
+* MemoryCache ：强引用的内存缓存
+
+  ```java
+  public class LruResourceCache extends LruCache<Key, Resource<?>> implements MemoryCache 
+  ```
+
+* active resourcesd：弱引用
+
+  ```java
+  private final Map<Key, WeakReference<EngineResource<?>>> activeResources;
+  ```
+
+通过load() 来加载图片，加载前后会做内存存储的逻辑。如果内存缓存中没有，那么才会使用 EngineJob 来进行异步获取硬盘资源或网络资源。EngineJob类似一个异步线程或observable。Engine是一个全局唯一的，通过Glide.getEngine()来获取。
+
+需要一个图片资源，假设Lruche中相应的资源图片，那么就就返回相应资源，同时从Lruche中清除，放到activeResources中。activeResources map是盛放正在使用的资源，以弱引用的形式存在。同时资源内部有被引用的记录。如果资源没有引用记录了，那么再放回Lruche中，同时从activeResources中清除。需要一个图片资源如果Lruche中没有，就从activeResources中找，找到后相应资源的引用加1。如果Lruche和activeResources中没有，那么进行资源异步请求（网络/diskLrucache），请求成功后，资源放到diskLrucache和activeResources中。
+
+用一个弱引用map activeResources来盛放项目中正在使用的资源。Lruche中不含有正在使用的资源。资源内部有个计数器来显示自己是不是还有被引用的情况（当然这里说的被项目中使用/引用不包括被Lruche/activeResources引用）。把正在使用的资源和没有被使用的资源分开有什么好处呢？假如突然某一个时刻，我想清空内存的Lruche，我直接就可以清空它，因为Lruche中的资源都没有被项目中使用，这时候我直接让Lruche所有资源置为null，那么所有资源就被清空了，可以安全的执行bitmap.recycle()。而常规的三层缓存机制中的Lruche有可能有些资源还被项目中使用，这时候不能直接把bitmap.recycle()。项目中还有对某些资源的引用，所以即使Lruche中的资源置为null。资源也不会清空。activeResources为什么使用弱引用。首先不用担心正在被项目使用的资源因为gc而被回收。引用项目中使用/引用了（是强引用）,那么gc时是不会回收这些资源的。只有所有强引用都不存在了且只有弱引用，那么才会gc时回收。所以这里activeResources使用弱引用是因为有些资源没有被项目使用了但是也没有被重新放到Lruche中，就会在gc时回收，不过这样的资源回收是少数场景。资源回收的大部分发生场景还是根据Lruche的Lru算法（最近最少使用）来清除相应资源。
