@@ -503,6 +503,11 @@ private static class MainThreadCallback implements Handler.Callback{
 
 ## 5 Glide 中三层缓存机制
 
+Glide 缓存分为两种：
+
+* 内存缓存（防止重复将图片读入到内存）
+* 磁盘缓存（防止重复的从网络或者其他地方下载和读取数据）
+
 三层存储的机制在 Engine 中实现的。Engine 这一层负责加载时做**管理内存缓存**的逻辑。持有 MemoryCache 、
 
 active resources（Map[Key, WeakReference]）
@@ -523,9 +528,23 @@ active resources（Map[Key, WeakReference]）
 
 总结：
 
-* 需要一个图片资源，如果 LruCache 中有相应的资源图片，就返回相应资源，同时从 LruCache 中清除，放到activeResources 中
+* 获取图片资源，如果 LruCache 中有相应的资源图片，就返回相应资源，同时从 LruCache 中清除，放到activeResources 中
 * activeResources map 如果资源没有引用记录了，那么再放回 LruCache 中，同时从 activeResources 中清除。
 * 如果 LruCache 中没有，就从 activeResources 中找，找到后相应资源的引用加1。
 * 如果 LruCache  和 activeResources 中没有，那么进行资源异步请求（网络 / diskLrucache），请求成功后，资源放到 diskLrucache 和a ctiveResources 中。
 
-用一个弱引用map activeResources来盛放项目中正在使用的资源。Lruche中不含有正在使用的资源。资源内部有个计数器来显示自己是不是还有被引用的情况（当然这里说的被项目中使用/引用不包括被Lruche/activeResources引用）。把正在使用的资源和没有被使用的资源分开有什么好处呢？假如突然某一个时刻，我想清空内存的Lruche，我直接就可以清空它，因为Lruche中的资源都没有被项目中使用，这时候我直接让Lruche所有资源置为null，那么所有资源就被清空了，可以安全的执行bitmap.recycle()。而常规的三层缓存机制中的Lruche有可能有些资源还被项目中使用，这时候不能直接把bitmap.recycle()。项目中还有对某些资源的引用，所以即使Lruche中的资源置为null。资源也不会清空。activeResources为什么使用弱引用。首先不用担心正在被项目使用的资源因为gc而被回收。引用项目中使用/引用了（是强引用）,那么gc时是不会回收这些资源的。只有所有强引用都不存在了且只有弱引用，那么才会gc时回收。所以这里activeResources使用弱引用是因为有些资源没有被项目使用了但是也没有被重新放到Lruche中，就会在gc时回收，不过这样的资源回收是少数场景。资源回收的大部分发生场景还是根据Lruche的Lru算法（最近最少使用）来清除相应资源。
+**Lru 算法**：**最近最少使用算法**，优先淘汰那些近期最少使用的缓存对象。
+
+LruCache 原理：内部维护一个特殊栈，把访问过的元素放到栈顶（若栈中存在，则更新至栈顶；若栈中不存在则直接入栈），如果栈中元素数量超过限定值，则删除栈底元素（即最近最少使用的元素）。
+
+官方解释：一个包含有限数量强引用的缓存，每次访问一个值，它都会被移动到队列的头部，将一个新的值添加到已经满了的缓存队列时，该队列末尾的值将会被逐出，并且可能会被垃圾回收机制进行回收。
+
+LruCache 中维护了一个集合 LinkedHashMap：
+
+* put：调用 trimToSize() ，判断加入元素后是否超过最大缓存数，如果超过（maxSize）就清除掉最少使用的元素。
+* get：获取集合中的缓存对象时，会更新队列，将该元素移动到 LinkedHashMap 的尾部，保持整个队列是按照访问顺序排序的。
+* remove：缓存中删除内容，并更新**缓存大小**。
+
+
+为什么会选择 LinkedHashMap 呢：这跟 LinkedHashMap 的特性有关，LinkedHashMap 的构造函数里有个布尔参数  **accessOrder**，当它为 true 时，LinkedHashMap 会以访问顺序为序排列元素，否则以插入顺序为序排序元素。
+
