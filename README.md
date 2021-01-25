@@ -8,6 +8,11 @@
     <a href="#"><img src="https://img.shields.io/badge/状态-正在更新中...-red.svg"/></a>
 </div>
 
+### Android
+
+* [Android基础](Android/Android基础.md)
+
+### Java
 
 ### 密码学
 
@@ -46,12 +51,6 @@
 * [行为型模式_备忘录模式](设计模式/025.行为型模式_备忘录模式.md)
 * [行为型模式_解释器模式](设计模式/026.行为型模式_解释器模式.md)
 * [模式对比](设计模式/027.模式对比.md)
-
-Process finished with exit code 0
-
-
-Process finished with exit code 0
- 
 
 ### 其他
 
