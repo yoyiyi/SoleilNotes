@@ -29,7 +29,7 @@
 ### Java
 
 * [Java 基础](Java/Java 基础.md)
-* [Java IO](Java/Java IO.md)
+* [Java IO](Java/Java+IO.md)
 * [Java 容器](Java/Java 容器.md)
 * [Java 并发](Java/Java 并发.md)
 * [Java 线程池](Java/Java 线程池.md)
@@ -42,8 +42,8 @@
 * [C++基础](C++/C++基础.md)
 
 ### Python
-* [Python基础](Python基础.md)
-* [爬虫例子](一个图片爬虫例子.md)
+* [Python基础](Pyhton/Python基础.md)
+* [爬虫例子](Pyhton/一个图片爬虫例子.md)
 
 ### 计算机网络
 * [计算机网络概述](计算机网络/001.计算机网络概述.md)
