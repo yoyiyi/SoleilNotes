@@ -245,7 +245,7 @@ public int addToDisplay(...) {
 
 ### 4.2 Window 更新过程
 
-Activity 更新最终调用到 WindowManagerGlobal#updateViewLayout
+Window  更新最终调用到 WindowManagerGlobal#updateViewLayout
 
 ```java
 //WindowManagerGlobal#updateViewLayout
@@ -356,3 +356,101 @@ private void performTraversals() {
 ```
 
 ### 4.3 Window 删除过程
+
+和 添加、删除一样，Window  删除最终调用到 WindowManagerGlobal#removeView
+
+```java
+//WindowManagerGlobal#removeView
+public void removeView(View view, boolean immediate) {
+        ...
+      synchronized (mLock) {
+          int index = findViewLocked(view, true);
+          View curView = mRoots.get(index).getView();
+	      // 关键代码
+          removeViewLocked(index, immediate);
+          ...
+      }
+}
+
+//WindowManagerGlobal#removeViewLocked
+private void removeViewLocked(int index, boolean immediate) {
+      ViewRootImpl root = mRoots.get(index);
+      View view = root.getView();
+      ...
+	   //调用 ViewRootImpl#die
+       boolean deferred = root.die(immediate);
+       if (view != null) {
+          view.assignParent(null);
+          if (deferred) {
+		
+             mDyingViews.add(view);
+          }
+       }
+}
+
+//ViewRootImpl#die
+boolean die(boolean immediate) {
+        if (immediate && !mIsInTraversal) {
+	       //1.同步删除
+            doDie();
+            return false;
+        }
+        ...
+	   //2.异步删除
+        mHandler.sendEmptyMessage(MSG_DIE);
+        return true;
+}
+
+//同步删除 ViewRootImpl#doDie 
+void doDie() {
+        //检查线程
+        checkThread();
+        synchronized (this) {
+            if (mRemoved) {
+                return;
+            }
+            mRemoved = true;
+            if (mAdded) {
+		        //调用ViewRootImpl#dispatchDetachedFromWindow
+                dispatchDetachedFromWindow();
+            }
+           ...
+        }
+	    //WindowManagerGlobal 类相关 window 的相关的参数清除
+        WindowManagerGlobal.getInstance().doRemoveView(this);
+}
+
+//ViewRootImpl#dispatchDetachedFromWindow
+void dispatchDetachedFromWindow() {
+        mFirstInputStage.onDetachedFromWindow();
+        if (mView != null && mView.mAttachInfo != null) {
+            mAttachInfo.mTreeObserver.dispatchOnWindowAttachedChange(false);
+            mView.dispatchDetachedFromWindow();
+        }
+        ...
+        try {
+	      // 通过 Binder 和 WMS 进行 IPC 进程间通信，SystemServer进程中，
+	      // 调用 Session 的remove方法
+	      // 最终调用 WMS 的 removeWindow 方法，将window移除。
+           mWindowSession.remove(mWindow);
+        } catch (RemoteException e) {
+        }
+        ...
+    }
+
+//异步删除 ViewRootImpl#ViewRootHandler()
+final ViewRootHandler mHandler = new ViewRootHandler();
+final class ViewRootHandler extends Handler {
+        @Override
+        public void handleMessage(Message msg) {
+            switch (msg.what) {
+		        //收到 MSG_DIE
+                case MSG_DIE:
+		            //调用 doDie 方法
+                    doDie();
+                    break;
+            }
+        }
+    }
+```
+
