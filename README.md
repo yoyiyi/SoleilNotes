@@ -42,8 +42,8 @@
 * [C++基础](C++/C++基础.md)
 
 ### Python
-* [Python基础](Pyhton/Python基础.md)
-* [爬虫例子](Pyhton/一个图片爬虫例子.md)
+* [Python基础](Python/Python基础.md)
+* [爬虫例子](Python/一个图片爬虫例子.md)
 
 ### 计算机网络
 * [计算机网络概述](计算机网络/001.计算机网络概述.md)
