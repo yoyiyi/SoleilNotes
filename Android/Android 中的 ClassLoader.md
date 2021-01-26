@@ -1,8 +1,8 @@
 ## 1 分类
 
 * 系统类加载器
-  * BootClassLoader：预加载常用类，由 Java 实现，继承 ClassLoader
-  * PathClassLoader：加载系统类和应用程序的类，继承 BaseDexClassLoader，没有参数 optimizedDirectory（给了默认 /data/dalvik-cache）无法定义解压的 dex 文件存储路径，常用来加载已经安装 apk 的 dex 文件（/data/dalvik-cache）
+  * BootClassLoader：**预加载常用类**，由 Java 实现，继承 ClassLoader
+  * PathClassLoader：**加载系统类和应用程序的类**，继承 BaseDexClassLoader，没有参数 optimizedDirectory（给了默认 /data/dalvik-cache）无法定义解压的 dex 文件存储路径，常用来加载已经安装 apk 的 dex 文件（/data/dalvik-cache）
   * DexClassLoader：加载 dex 文件以及包含 dex 的压缩文件（apk 和 jar 文件），继承 BaseDexClassLoader，
 
 * 自定义加载器
