@@ -11,8 +11,9 @@
 ### Android
 
 * [Android基础](Android/Android基础.md)
+* Framework
+* Android-JNI
 * [性能优化]()
-
   * [应用崩溃优化](Android/性能优化/01.应用崩溃优化.md)
   * [内存优化](Android/性能优化/02.内存优化.md)
   * [绘制优化](Android/性能优化/03.绘制优化.md)
@@ -35,10 +36,8 @@
 * [Java线程池](Java/Java线程池.md)
 * [Java虚拟机](Java/Java虚拟机.md)
 
-### C
+### C/C++
 * [C基础](C/C基础.md)
-
-### C++
 * [C++基础](C++/C++基础.md)
 
 ### Python
@@ -120,3 +119,6 @@
 ### 其他
 
 * [正则](正则/正则表达式.md)
+* [git]()
+  * [git基础1](git/part01/000.目录.md) 
+  * [git基础2](git/part01/000.目录.md) 
