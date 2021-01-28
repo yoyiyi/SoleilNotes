@@ -120,5 +120,6 @@
 
 * [正则](正则/正则表达式.md)
 * [git]()
-  * [git基础1](git/part01/000.目录.md) 
-  * [git基础2](git/part01/000.目录.md) 
+  * [git基础1](Git/part01/000.目录.md) 
+  * [git基础2](Git/part01/000.目录.md)
+  * [reset和checkout区别.md](Git/001.reset和checkout区别.md)  
