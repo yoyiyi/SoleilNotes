@@ -94,8 +94,8 @@ static final Map<Class<?>, Constructor<? extends Unbinder>> BINDINGS = new Linke
 
 通过以上代码，有一个问题 xxx_ViewBinding 这个类哪里来，涉及以下技术。
 
-* JavaPoet：用来生成.java文件
-* Annotation Processor + APT（Annotation Processing Tool ）：编译时扫描和解析 Java 注解的工具
+* **JavaPoet：用来生成.java文件**
+* **Annotation Processor + APT（Annotation Processing Tool ）：编译时扫描和解析 Java 注解的工具**
 
 ```java
 public class MainActivity_ViewBinding implements Unbinder {
