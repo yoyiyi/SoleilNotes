@@ -13,7 +13,7 @@
 * [Android基础](Android/Android基础.md)
 * Framework
 
-  * Android系统架构
+* Android系统架构
   * Android系统启动
   * 应用进程启动过程
   * Activity启动过程
@@ -38,7 +38,7 @@
   * 组件化
   * [Jetpack](Android/Jetpack.md)
   * JNI
-* [性能优化]()
+* 性能优化
   * 稳定性优化
   * 内存优化
   * 绘制优化
