@@ -13,7 +13,8 @@
 * [Android基础](Android/Android基础.md)
 * Framework
 
-* Android系统架构
+  * Android系统架构
+
   * Android系统启动
   * 应用进程启动过程
   * Activity启动过程
@@ -24,6 +25,7 @@
   * AMS
   * WMS
   * Binder
+
 * Android 进阶
   * Apk 打包
   * [Hook 技术](Android/Hook技术.md)
@@ -38,6 +40,7 @@
   * 组件化
   * [Jetpack](Android/Jetpack.md)
   * JNI
+  * [MMKV](Android/mmkv.md)
 * 性能优化
   * 稳定性优化
   * 内存优化
