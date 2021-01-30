@@ -12,22 +12,40 @@
 
 * [Android基础](Android/Android基础.md)
 * Framework
-* Android-JNI
-* [性能优化]()
-  * [应用崩溃优化](Android/性能优化/01.应用崩溃优化.md)
-  * [内存优化](Android/性能优化/02.内存优化.md)
-  * [绘制优化](Android/性能优化/03.绘制优化.md)
-  * [App启动速度优化](Android/性能优化/04.App启动速度优化.md)
-  * [IO优化](Android/性能优化/05.IO优化.md)
-  * [数据存储优化](Android/性能优化/06.数据存储优化.md)
-  * [SQLite优化](Android/性能优化/07.SQLite优化.md)
-  * [网络优化](Android/性能优化/08.网络优化.md)
-  * [电量优化](Android/性能优化/09.电量优化.md)
-  * [Apk包优化](Android/性能优化/10.Apk包优化.md)
-  * [高效的测试](Android/性能优化/11.高效的测试.md)
-  * [发布版本优化](Android/性能优化/12.发布版本优化.md)
 
-### Java
+  * Android系统架构
+  * Android系统启动
+  * 应用进程启动过程
+  * Activity启动过程
+  * Service启动过程
+  * 广播启动过程
+  * ContentProvider启动过程
+  * Context
+  * AMS
+  * WMS
+  * Binder
+* Android 进阶
+  * Apk 打包
+  * [Hook 技术](Android/Hook技术.md)
+  * [v1、v2、v3 签名区别](Android/v1、v2、v3签名区别.md)
+  * RecyclerView
+  * ViewPage2
+  * View绘制流程
+  * [事件分发](Android/事件分发.md)
+  * [换肤](Android/换肤方案.md)
+  * [热修复](Android/热修复.md)
+  * [插件化](Android/插件化)
+  * 组件化
+  * [Jetpack](Android/Jetpack.md)
+  * JNI
+* [性能优化]()
+  * 稳定性优化
+  * 内存优化
+  * 绘制优化
+  * 电量优化
+  * 启动优化
+  * 网络优化
+  * 包体积优化
 
 * [Java基础](Java/Java基础.md)
 * [JavaIO](Java/JavaIO.md)
