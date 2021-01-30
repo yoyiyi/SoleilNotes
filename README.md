@@ -40,6 +40,8 @@
   * [Jetpack](Android/Jetpack.md)
   * JNI
   * [MMKV](Android/mmkv.md)
+  * [Android9.0非SDK接口限制](Android/Android9.0非SDK接口限制.md)
+  * [保活](Android/保活.md)
 * 源码分析
   * [ARouter](Android/第三方源码/Arouter.md)
   * [ButterKnife](Android/第三方源码/ButterKnife.md)
@@ -51,7 +53,6 @@
   * [Okhttp](Android/第三方源码/Okhttp.md) 
   * [Retrofit](Android/第三方源码/Retrofit.md)
   * [RxJava](Android/第三方源码/RxJava.md)
-
 * 性能优化
   * 稳定性优化
   * 内存优化
@@ -60,9 +61,13 @@
   * 启动优化
   * 网络优化
   * 包体积优化
+* 其他知识点
+  * [http和https]()
+  * [HTTP1.0、HTTP2.0、HTTP3.0](other/001.HTTP1.0、HTTP2.0、HTTP3.0.md)
 * [Java基础](Java/Java基础.md)
 * [JavaIO](Java/JavaIO.md)
 * [Java容器](Java/Java容器.md)
+  * [HashMap源码]()
 * [Java并发](Java/Java并发.md)
 * [Java线程池](Java/Java线程池.md)
 * [Java虚拟机](Java/Java虚拟机.md)
