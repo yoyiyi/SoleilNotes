@@ -14,9 +14,9 @@
 * Framework
 
   * [Android系统架构](Android/Android系统架构.md)
-* [Android系统启动](Android/Android系统启动.md)
+  * [Android系统启动](Android/Android系统启动.md)
   * [应用进程启动过程](Android/应用程序进程启动过程.md)
-  * [Activity启动过程](Android/Activity启动过程.png)
+  * [Activity启动过程](Android/Activity启动过程.md)
   * Service启动过程
   * 广播启动过程
   * ContentProvider启动过程
