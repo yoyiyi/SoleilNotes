@@ -14,8 +14,8 @@
 * Framework
 
   * [Android系统架构](Android/Android系统架构.md)
-* Android系统启动
-  * 应用进程启动过程
+* [Android系统启动](Android/Android系统启动.md)
+  * [应用进程启动过程](Android/应用程序进程启动过程.md)
   * Activity启动过程
   * Service启动过程
   * 广播启动过程
@@ -40,6 +40,7 @@
   * [Jetpack](Android/Jetpack.md)
   * JNI
   * [MMKV](Android/mmkv.md)
+  * [Bitmap](Android/Bitmap.md)
   * [Android9.0非SDK接口限制](Android/Android9.0非SDK接口限制.md)
   * [保活](Android/保活.md)
 * 源码分析
