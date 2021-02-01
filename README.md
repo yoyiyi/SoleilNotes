@@ -11,6 +11,7 @@
 ### Android
 
 * [Android基础](Android/Android基础.md)
+  * 
 * Framework
 
   * [Android系统架构](Android/Android系统架构.md)
@@ -66,6 +67,9 @@
   * [http和https]()
   * [HTTP1.0、HTTP2.0、HTTP3.0](other/001.HTTP1.0、HTTP2.0、HTTP3.0.md)
 * [Java基础](Java/Java基础.md)
+  * [泛型](Java/泛型.md)
+  * [反射与动态代理](Java/反射与动态代理.md)
+  * [异常](Java/异常体系.md)
 * [JavaIO](Java/JavaIO.md)
 * [Java容器](Java/Java容器.md)
   * [HashMap源码]()
@@ -164,4 +168,4 @@
 * [git]()
   * [git基础1](Git/part01/000.目录.md) 
   * [git基础2](Git/part01/000.目录.md)
-  * [reset和checkout区别.md](Git/001.reset和checkout区别.md)  
+  * [reset和checkout区别](Git/001.reset和checkout区别.md)  

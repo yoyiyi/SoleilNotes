@@ -517,7 +517,7 @@ public final void wait() throws InterruptedException
 protected void finalize() throws Throwable { }
 ```
 
-#### 57 Java 序列化中如果有些字段不想进行序列化，怎么办？
+#### 57 Java 序列化中如果有些字段不想进行序列化，如何做？
 
 使用 transient 。
 
@@ -528,6 +528,22 @@ public class Person {
     private transient Integer weigth;
     ...
 }
-
 ```
 
+#### 59  BIO、NIO、AIO 区别？
+
+##### BIO 同步阻塞IO
+
+基于**流模型**实现的，交互的方式是同步、阻塞方式，也就是说在读入输入流或者输出流时，在读写动作完成之前，线程会一直阻塞在那里，它们之间的调用时可靠的线性顺序。
+
+优点：代码比较简单、直观
+
+缺点：IO 的效率和扩展性很低，容易成为应用性能瓶颈
+
+#####  NIO 同步非阻塞IO
+
+ Java 1.4 引入的 java.nio 包，提供了 Channel、Selector、Buffer 等新的抽象，可以构建**多路复用**的、同步非阻塞 IO 程序，同时提供了更接近操作系统底层高性能的数据操作方式。
+
+##### AIO 异步非阻塞IO
+
+是 Java 1.7 之后引入的包，是 NIO 的升级版本，提供了异步非堵塞的 IO 操作方式，所以称为AIO（Asynchronous IO），异步 IO 是基于事件和回调机制实现的，也就是应用操作之后会直接返回，不会堵塞在那里，当后台处理完成，操作系统会通知相应的线程进行后续的操作。
