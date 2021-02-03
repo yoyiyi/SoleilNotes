@@ -399,3 +399,5 @@ public class Handler {
 ```
 
 Looper.loop() 是个死循环，不断调用 MessageQueue.next() 获取 Message ，并调用msg.target.dispatchMessage(msg) 切换到 Handler 来分发消息，以此来完成消息的回调。
+
+https://blog.csdn.net/start_mao/article/details/98963744
