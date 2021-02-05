@@ -37,7 +37,7 @@
   * [v1、v2、v3 签名区别](Android/v1、v2、v3签名区别.md)
   * RecyclerView
   * ViewPage2
-  * View绘制流程
+  * [View绘制流程](Android/View绘制流程.md)
   * [事件分发](Android/事件分发.md)
   * [换肤](Android/换肤方案.md)
   * [热修复](Android/热修复.md)
