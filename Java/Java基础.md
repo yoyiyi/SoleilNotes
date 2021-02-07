@@ -1073,3 +1073,37 @@ AbstractQueuedSynchronizer 类如其名，抽象的队列式的同步器，AQS �
 true，否则返回 false。
 ```
 
+#### 83 反射
+
+在运行状态中，对于任意一个类都能够知道这个类所有的属性和方法；并且对于任意一个对象，都能够调用它的任意一个方法；这种动态获取信息以及动态调用对象方法的功能成为 Java 语言的反射机制。
+
+##### 获取 Class 对象的 3 种方法
+
+* o.getClass();
+* Object.class;
+* Class.forName("类的全路径");
+
+```java
+//获取 Person 类的 Class 对象
+Class clazz = Class.forName("com.test.Person");
+//获取 Person 类的所有方法信息
+Method[] method = clazz.getDeclaredMethods();
+for(Method m:method){
+ 	System.out.println(m.toString());
+}
+//获取 Person 类的所有成员属性信息
+Field[] field = clazz.getDeclaredFields();
+for(Field f:field){
+	System.out.println(f.toString());
+}
+//获取 Person 类的所有构造方法信息
+Constructor[] constructor = clazz.getDeclaredConstructors();
+for(Constructor c:constructor){
+ 	System.out.println(c.toString());
+}
+```
+
+##### 创建对象的两种方法
+
+* Class 对象的 newInstance()：使用 Class 对象的 newInstance()方法来创建该 Class 对象对应类的实例，但是这种方法要求该 Class 对象对应的类有默认的空构造器。 
+* 调用 Constructor 对象的 newInstance()：先使用 Class 对象获取指定的 Constructor 对象，再调用Constructor 对象的 newInstance() 方法来创建 Class 对象对应类的实例,通过这种方法可以选定构造方法创建实例。
