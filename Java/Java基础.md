@@ -971,6 +971,8 @@ Synchronized 是通过对象内部的一个叫做监视器锁（monitor）来实
 
 是在编译器级别的事情。在即时编译器时，如果发现不可能被共享的对象，则可以消除这些对象的锁操作，多数是因为程序员编码不规范引起。
 
+[大彻大悟synchronized原理，锁的升级](https://www.jianshu.com/p/67b9a806463e)
+
 #### 75 ThreadPoolExecutor 
 
 ```java

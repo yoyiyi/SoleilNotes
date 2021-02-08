@@ -907,7 +907,7 @@ Activity 和 Service 都是 Android 四大组件之一。都是 Context 类的�
 * Service 负责后台任务的处理。
 * Activity 和 Service 之间可以通过 Intent 传递数据，可以把 Intent 看作是通信使者。
 
-### Bitmap 的 recycler()
+### 46 Bitmap 的 recycler()
 
  Android 有自己的垃圾回收机制，如果只使用了少量的图片，回收与否关系不大。可是若有大量的 bitmap 需要垃圾回收，那么垃圾回收的次数过于频繁，会造成系统资源负荷，这时候还是调用 recycler() 比较好。
 
@@ -917,7 +917,7 @@ Activity 和 Service 都是 Android 四大组件之一。都是 Context 类的�
 
 bitmap.recycle()方法用于回收该Bitmap所占用的内存，接着将bitmap置空，最后使用System.gc()调用一下系统的垃圾回收器进行回收，调用System.gc()并不能保证立即开始进行回收过程，而只是为了加快回收的到来。
 
-### 一张Bitmap所占内存以及内存占用的计算
+### 47 一张Bitmap所占内存以及内存占用的计算
 
 ```java
 Bitamp 所占内存大小 = 宽度像素 *（inTargetDensity / inDensity）* 高度像素 *（inTargetDensity / inDensity）* 一个像素所占的内存字节大小 
@@ -931,34 +931,34 @@ Bitamp 所占内存大小 = 宽度像素 *（inTargetDensity / inDensity）* 高
 - **getAllocationByteCount()**：API19 加入，代表在内存中为 Bitmap 分配的内存大小，代替了 getByteCount() 方法。
 - 在**不复用 Bitmap** 时，getByteCount() 和 getAllocationByteCount 返回的结果是一样的。在通过**复用 Bitmap** 来解码图片时，那么 getByteCount() 表示新解码图片占用内存的大 小，getAllocationByteCount() 表示被复用 Bitmap 真实占用的内存大小
 
-### 数据库升级增加表和删除表都不涉及数据迁移，但是修改表涉及到对原有数据进行迁移,如何实现？
+### 48 数据库升级增加表和删除表都不涉及数据迁移，但是修改表涉及到对原有数据进行迁移,如何实现？
 
 * 将现有表命名为临时表 
 * 创建新表
 * 将临时表的数据导入新表
 * 删除临时表
 
-### Canvas.save() 跟 Canvas.restore()的区别
+### 49 Canvas.save() 跟 Canvas.restore()的区别
 
 * Canvas.save()：来保存 Canvas 的状态。save 之后，可以调用 Canvas 的平移、放缩、旋转、错切、裁剪等操作。
 * Canvas.restore()：用来恢复 Canvas 之前保存的状态。防止 save 后对 Canvas 执行的操作对后续的绘制有影响。
 
 save 和 restore 要配对使用，**restore 次数 <= save 少**
 
-### 为什么bindService可以跟Activity生命周期联动？
+### 50 为什么bindService可以跟Activity生命周期联动？
 
 * bindService 方法执行时，**LoadedApk** 会记录 **ServiceConnection 信息**。
 
 * Activity 执行 finish 方法时，会通过 LoadedApk 检查 Activity 是否存在未注销/解绑的 BroadcastReceiver 和 ServiceConnection，如果有，那么会通知 AMS 注销/解绑对应的 BroadcastReceiver 和 Service，并打印异常信息，告诉用户应该主动执行注销/解绑的操作。
 
-### 自定义 view 效率高于xml定义吗？说明理由。
+### 51 自定义 view 效率高于xml定义吗？说明理由。
 
 不一定，如果自定义 view 计算复杂，可能效率不一定高，但是一般情况下，自定义 view 效率高于 xml 定义。
 
 * 少了解析 xml
 * 自定义 View 减少了 ViewGroup 与 View之间的测量，包括父量子，子量自身，子在父中位置摆放，当子 view变化时,父的某些属性都会跟着变化
 
-### Gradle 配置多渠道打包
+### 52 Gradle 配置多渠道打包
 
 我们使用友盟多渠道打包。
 
@@ -975,7 +975,7 @@ android {
 
 或者使用 360 加固，配置多渠道打包。
 
-#### Handler、Thread和HandlerThread的差别
+#### 53 Handler、Thread和HandlerThread的差别
 
 * Handler：在 Android 中负责发送和处理消息，线程之间的消息通信。
 
@@ -985,7 +985,7 @@ android {
   * 继承自 **Thread**。
   * 内部实现了 **Looper** ，便于消息的分发。
 
-### 广播的两种注册方式 ？
+### 54 广播的两种注册方式 ？
 
 * **静态注册**（常驻广播）：在 AndroidManifest.xml 配置 <receive>
   * 常驻，不受任何组件的生命周期影响
@@ -996,7 +996,7 @@ android {
   * 不需要特定时刻监听广播
   * 当用来注册的 Activity 关掉后，广播也就失效了。
 
-#### ddms 和 traceView 的区别？
+### 55 ddms 和 traceView 的区别？
 
 ddms：davik debug monitor service。简单的说 ddms 是一个**程序执行查看器**，在里面可以看见线程和堆栈等信息。
 
@@ -1004,7 +1004,7 @@ traceView： 程序性能分析器。traceview 是 ddms 中的一部分内容。
 
 traceview 是 Android 平台特有的数据采集和分析工具，它主要用于分析 Android 中应用程序的 hotspot（瓶颈）。Traceview 本身只是一个数据分析工具，而数据的采集则需要使用 Android SDK 中的 Debug 类或者利用DDMS 工具。二者的用法如下：开发者在一些关键代码段开始前调用 Android SDK 中 Debug 类的 startMethodTracing 函数，并在关键代码段结束前调用 stopMethodTracing 函数。这两个函数运行过程中将采集运行时间内该应用所有线程（注意，只能是 Java线程） 的函数执行情况， 并将采集数据保存到/mnt/sdcard/下的一个文件中。 开发者然后需要利用 SDK 中的 Traceview工具来分析这些数据。
 
-#### 说说ContentProvider、ContentResolver、ContentObserver 之间的关系？
+### 56 说说ContentProvider、ContentResolver、ContentObserver 之间的关系？
 
 * ContentProvider **内容提供者**：对外提供数据，通过 ContentProvider 把应用中的数据共享给其他应用访问，其他应用可以通过ContentProvider 对你应用中的数据进行添删改查。
 
