@@ -45,7 +45,7 @@
   * 组件化
   * [Jetpack](Android/Jetpack.md)
   * JNI
-  * [MMKV](Android/mmkv.md)
+  * [MMKV](Android/MMKV.md)
   * [Bitmap](Android/Bitmap.md)
   * [Android9.0非SDK接口限制](Android/Android9.0非SDK接口限制.md)
   * [保活](Android/保活.md)
