@@ -105,6 +105,7 @@
 ### Python
 * [Python基础](Python/Python基础.md)
 * [爬虫例子](Python/一个图片爬虫例子.md)
+* [bilibili视频爬虫](Python/bili视频爬虫.md)
 
 ### 计算机网络
 * [计算机网络概述](计算机网络/001.计算机网络概述.md)
