@@ -95,8 +95,8 @@
 
 ### 算法
 
-* [剑指Offer](算法/剑指Offer/00.目录.md)
-* [Leetcode](算法/剑指offer/00.目录.md)
+* [剑指Offer](算法/剑指Offer.md)
+* [Leetcode](算法/leetcode.md)
 
 ### C/C++
 * [C基础](C/C基础.md)
