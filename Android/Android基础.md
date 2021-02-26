@@ -1010,3 +1010,6 @@ traceview 是 Android 平台特有的数据采集和分析工具，它主要用�
 
 * ContentResolver **内容解析者**：按照一定规则访问内容提供者的数据（其实就是调用内容提供者自定义的接口来操作它的数据）。
 * ContentObserver **内容监听器**：监听(捕捉)特定Uri引起的数据库的变化，继而做一些相应的处理，它类似于数据库技术中的触发器(Trigger)，当ContentObserver所观察的Uri发生变化时，便会触发它。
+
+### 57  实现竖向的 TextView？TextView 文字描边效果？
+

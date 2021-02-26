@@ -2,6 +2,8 @@
 
 在 Android 系统启动、应用程序进程启动过程以及四大组件工作过程都设计到一个非常重要的概念 AMS。AMS是Android中最核心的服务之一，AMS 并不是单打独斗，而是以家族形式，相互配合完成工作。
 
+
+
 在 Activity 的启动过程中会调用 Instrumentation 的 execStartActivity 方法。
 
 ```java
