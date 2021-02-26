@@ -1013,3 +1013,83 @@ traceview 是 Android 平台特有的数据采集和分析工具，它主要用�
 
 ### 57  实现竖向的 TextView？TextView 文字描边效果？
 
+### 58 Service 是否在 main thread 中执行, service 里面是否能执行耗时的操作?
+
+默认情况，如果没有显示的指 service 所运行的进程, Service 和 activity 是运行在当前 app 所在进程的 main thread(**UI 主线程**)里面。
+
+service 里面不能执行耗时的操作(网络请求,拷贝数据库,大文件)
+
+### 59 简单说一下 Activity？
+
+四大组件之一，用于与用户交互，一个界面对应一个 Activity。
+
+### 60 如何保存 Activity 的状态或者 Activiy 重启怎么保存数据？
+
+使用 **onSaveInstanceState()**
+
+ ```kotlin
+override fun onSaveInstanceState(outState: Bundle) {
+     //保存状态
+     super.onSaveInstanceState(outState)
+}
+ ```
+
+### 如何将一个 Activity 设置成窗口的样式
+
+```xml
+android:theme="@android:style/Theme.Dialog
+```
+
+### 61 Context、 Activity、Application 有什么区别？
+
+* Activity 和 Application 都是Context的子类
+* Context：上下文，管理上下文环境中各个参数和变量。
+* Activity 维护一个 Acitivity 的生命周期，其对应的 Context 也只能访问该 Activity内的各种资源。
+* Application 维护一个 Application 的生命周期。
+
+### 62 Context 是 什 么 ？  一 个 应 用 有 多 少 个 Context？
+* 描述的是一个应用程序环境的信息，即上下文。
+
+* 抽象(abstract class)类，Android 提供了该抽象类的具体实现类。
+
+* 通过它我们可以获取应用程序的资源和类，也包括一些应用级别操作，例如：启动一个Activity，发送广播，接受Intent信息
+* Context 实例个数 = Service 个数 + Activity 个数 + 1（Application对应的Context实例）
+
+### 63 Activity 怎么和 Service 绑定，怎么在Activity 中启动自己对应的 Service？
+
+bindService(Intent service, ServiceConnection conn, int flags)。
+
+ Activity 中可以通过 **startService** 和 **bindService** 启动 Service。一般情况下如果想获取 Service 的服务对象那么通过 bindService（），比如音乐播放器，第三方支付等。如果仅仅只是为了开启一个后台任务那么可以使用 startService（）方法。
+
+### 64 Service 的生命周期
+
+*  非绑定模式
+  * 当第一次调用 startService ：onCreate() -> onStartCommand()
+  * 多次调用 startService：onStartCommand()
+  * 关闭：onDestory()
+* 绑定模式
+  * 第一次调用 bindService：onCreate() -> onBind(）
+  * 解除绑定： onUnbind() -> onDestory()。
+
+![](../asset/servie生命周期.png)
+
+### 65 简单说一下 IntentService
+
+* IntentService 是 Service 的子类，创建独立的 **worker 线程**来处理所有的 Intent 请求；
+* 请求处理完成后，IntentService 会自动停止，无需调用 stopSelf() 停止 Service； 
+
+### 66 说说 Activity、Intent、Service 是什么关系？
+
+* Activity 和 Service 都是 Context 类的子类ContextWrapper 的子类
+
+* Activity 负责用户界面的显示和交互，Service 负责后台任务的处理
+* Intent 传递数据，因此可以把 Intent 看作是通信使者
+
+### 67 Service 和 Activity 在同一个线程吗？
+
+对于同一 app 来说默认情况下在同一个线程中，也就是 MainThread （UI 线程）。
+
+### 68  Service 里面可以弹吐司么？
+
+可以，Service  是 Context 的子类。
+
