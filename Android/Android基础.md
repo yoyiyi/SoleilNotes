@@ -104,9 +104,9 @@ window （实现类是 PhoneWindow ）相当于一个容器，里面盛放着很
 
 不同的组件发生 ANR 的时间不同（均为前台）：
 
-* Activity 5s
-* BroadcastReceiver 10s
-* Service 20s
+* Activity：5s
+* BroadcastReceiver：10s
+* Service：20s
 
 开发机器上出现问题，可以通过查看 **/data/anr/traces.txt** 。
 
@@ -132,10 +132,10 @@ AsyncTask 是一个抽象的泛型类，提供了 Params（参数类型）、Pro
 
 AsyncTask 里面线程池是一个核心线程数为 CPU + 1，最大线程数为 CPU * 2 + 1，工作队列长度为128 的线程池，线程等待队列的最大等待数为 28，但是可以自定义线程池。线程池是由 AsyncTask 来处理的，线程池允许tasks并行运行，需要注意的是并发情况下数据的一致性问题，新数据可能会被老数据覆盖掉。所以希望tasks能够串行运行的话，使用SERIAL_EXECUTOR。
 
-#### 原理
+#### 原理（两个线程池 + Handler）
 
 - AsyncTask 中有两个线程池（SerialExecutor 和 THREAD_POOL_EXECUTOR）和一个Handler（InternalHandler），SerialExecutor 用于任务的排队，THREAD_POOL_EXECUTOR 用于真正地执行任务，InternalHandler 用于将执行环境从线程池切换到主线程。
-- sHandler 是一个静态的 Handler 对象，为了能够将执行环境切换到主线程，这就要求 sHandler这个对象必须在主线程创建。由于静态成员会在加载类的时候进行初始化，因此这就变相要求AsyncTask 的类必须在主线程中加载，否则同一个进程中的 AsyncTask 都将无法正常工作。
+- sHandler 是一个静态的 Handler 对象，为了能够将执行环境切换到主线程，这就要求 sHandler这个对象必须在主线程创建。由于静态成员会在加载类的时候进行初始化，因此就要求AsyncTask 的类必须在主线程中加载，否则同一个进程中的 AsyncTask 都将无法正常工作。
 
 #### 缺陷
 
