@@ -151,7 +151,7 @@ AsyncTask 里面线程池是一个核心线程数为 CPU + 1，最大线程数�
 
 - View 动画：
   - 作用对象是 View，可用 xml 定义，建议使用 xml 比较易读
-  - 四种类型：平移、缩放、旋转、透明度
+  - 四种类型：平移、旋转、缩放、透明度
 - 帧动画：
   - 通过 AnimationDrawable 实现，容易 OOM
 - 属性动画：
@@ -168,7 +168,7 @@ AsyncTask 里面线程池是一个核心线程数为 CPU + 1，最大线程数�
 
 #### 原理：
 
-* 属性动画：其实就是利用插值器和估值器，来计算出各个时刻 View 的属性，然后通过改变View的属性来，实现View的动画效果。
+* 属性动画：其实就是利用**插值器和估值器**，来计算出各个时刻 View 的属性，然后通过改变View的属性来，实现View的动画效果。
 * View 动画：只是影像变化，view的实际位置还在原来的地方。
 * 帧动画：是在xml中定义好一系列图片之后，使用 AnimationDrawable 来播放的动画。
 * 属性动画：
@@ -333,7 +333,8 @@ DOM：即对象文档模型，它是将整个XML文档载入内存(所以效率�
 
 ### 26 jar 和 aar 的区别
 
-jar 包里面只有代码，aar 里面有代码、资源文件，比如 drawable 文件，xml资源文件。对于一些不常变动的 Android Library，我们可以直接引用 aar，加快编译速度。
+* jar 包里面只有代码
+* aar 里面有代码、资源文件，比如 drawable 文件，xml资源文件，对于一些不常变动的 Android Library，我们可以直接引用 aar，加快编译速度。
 
 ### 27 程序自启动？
 
@@ -1092,4 +1093,10 @@ bindService(Intent service, ServiceConnection conn, int flags)。
 ### 68  Service 里面可以弹吐司么？
 
 可以，Service  是 Context 的子类。
+
+### 69  加速启动Activity？
+
+* 优化布局文件
+* onCreate() 和 onReume() 减少复杂操作，可以利用多线程
+* 减少主线程阻塞时间
 
