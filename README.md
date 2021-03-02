@@ -75,7 +75,7 @@
 * [Java基础](Java/Java基础.md)
   * [泛型](Java/泛型.md)
   * [反射与动态代理](Java/反射与动态代理.md)
-  * [异常](Java/异常体系.md)
+  * [异常体系](Java/异常体系.md)
 * [JavaIO](Java/JavaIO.md)
 * [Java容器](Java/Java容器.md)
   * [ConcurrentHashMap解析](Java/ConcurrentHashMap.md)
