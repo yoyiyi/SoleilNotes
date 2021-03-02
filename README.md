@@ -7,11 +7,15 @@
     <a href="#"><img src="https://img.shields.io/badge/star-1-reen.svg"/></a>
     <a href="#"><img src="https://img.shields.io/badge/状态-正在更新中...-red.svg"/></a>
 </div>
+| Android                       | 算法 | C/C++ | Python | 计算机网络 | 计算机组成原理 | 数据结构 | 操作系统 | 密码学 | 设计模式 | 其他 |
+| ----------------------------- | ---- | ----- | ------ | ---------- | -------------- | -------- | -------- | ------ | -------- | ---- |
+| [:hot_pepper:](#:hot_pepper:-Android) | [:aerial_tramway:](:aerial_tramway:-算法) | [:yin_yang:](:yin_yang:-C/C++) | [:zap:](:zap:-Python) | [:apple:](:apple:-计算机网络) | [:bamboo:](:bamboo:-计算机组成原理) | [:fallen_leaf:](:fallen_leaf:-组成原理) | [:fountain_pen:](:fountain_pen:-数据结构) | [:balloon:](:balloon:-操作系统) | [:gift_heart:](:gift_heart:-密码学) | [:beach_umbrella:-设计模式](:beach_umbrella:-其他) |
 
-### Android
+
+
+### :hot_pepper: Android
 
 * [Android基础](Android/Android基础.md)
-* 
 * Framework
 
   * [View 体系](Android/View体系.md)
@@ -85,13 +89,13 @@
 * [Java线程池](Java/Java线程池.md)
 * [Java虚拟机](Java/Java虚拟机.md)
 
-### 算法
+### :aerial_tramway: 算法
 
 * [剑指Offer](算法/剑指Offer.md)
 * [Leetcode](算法/leetcode.md)
 * [TOP100](算法/top100.md)
 
-### C/C++
+### :yin_yang:: C/C++
 * [C基础](C/C基础.md)
 * [C++基础](C++/C++基础.md)
 
@@ -175,7 +179,7 @@
   * [解释器模式](设计模式/026.行为型模式_解释器模式.md)
 * [模式对比](设计模式/027.模式对比.md)
 
-### 其他
+### :beach_umbrella: 其他
 
 * [面经]()
 
