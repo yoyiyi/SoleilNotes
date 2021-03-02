@@ -707,6 +707,8 @@ public static void cancelAdaptScreen(final Activity activity) {
 
 [Android 屏幕适配：最全面的解决方案](https://www.jianshu.com/p/ec5a1a30694b)
 
+[Android屏幕适配全攻略(最权威的官方适配指导)](https://www.jianshu.com/p/f46f2874f52e)
+
 ### 36 显式 Intent 和隐式 Intent
 
 显式 Intent，明确指出目标组件的名称
@@ -1099,4 +1101,24 @@ bindService(Intent service, ServiceConnection conn, int flags)。
 * 优化布局文件
 * onCreate() 和 onReume() 减少复杂操作，可以利用多线程
 * 减少主线程阻塞时间
+
+### 70 说说Android 集合框架？
+
+* SparseArray：key 为 int 类型，value 为 Object。key 的查找使用了二分的查找方式。
+* ArrayMap：存放了两个数组。一个存放 hash，另外一个存放的是真正的数值。二分法查找和实时扩容机制，实现了一个有序的HashMap.
+
+### 71 断点续传和下载
+
+* 断点续传和断点下载都是用的 RandomAccessFile, seek() 具有移动指定的文件大小的位置的功能。
+* 在 Http 请求中，加入请求头 Range，下载指定区间的文件数。
+
+### 73 Fragment 在 ViewPager 里面的生命周期，滑动 ViewPager 的页面时 Fragment 的生命周期的变化。
+
+### 74 Android中跨进程通讯的几种方式?
+
+* Bundle
+* 通过系统文件
+* ContentProvider
+* Messenger
+* AIDL
 
