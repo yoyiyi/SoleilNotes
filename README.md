@@ -9,7 +9,7 @@
 </div>
 | Android                       | 算法 | C/C++ | Python | 计算机网络 | 计算机组成原理 | 数据结构 | 操作系统 | 密码学 | 设计模式 | 其他 |
 | ----------------------------- | ---- | ----- | ------ | ---------- | -------------- | -------- | -------- | ------ | -------- | ---- |
-| [:hot_pepper:](#:hot_pepper:-Android) | [:aerial_tramway:](:aerial_tramway:-算法) | [:yin_yang:](:yin_yang:-C/C++) | [:zap:](:zap:-Python) | [:apple:](:apple:-计算机网络) | [:bamboo:](:bamboo:-计算机组成原理) | [:fallen_leaf:](:fallen_leaf:-组成原理) | [:fountain_pen:](:fountain_pen:-数据结构) | [:balloon:](:balloon:-操作系统) | [:gift_heart:](:gift_heart:-密码学) | [:beach_umbrella:-设计模式](:beach_umbrella:-其他) |
+| [:hot_pepper:](#:hot_pepper:-Android) | [:aerial_tramway:](:aerial_tramway:-算法) | [:yin_yang:](:yin_yang:-C/C++) | [:zap:](:zap:-Python) | [:apple:](:apple:-计算机网络) | [:bamboo:](:bamboo:-计算机组成原理) | [:fallen_leaf:](:fallen_leaf:-组成原理) | [:fountain_pen:](:fountain_pen:-数据结构) | [:balloon:](:balloon:-操作系统) | [:gift_heart:](:gift_heart:-密码学) | [:beach_umbrella:](:beach_umbrella:-其他) |
 
 
 
@@ -95,16 +95,16 @@
 * [Leetcode](算法/leetcode.md)
 * [TOP100](算法/top100.md)
 
-### :yin_yang:: C/C++
+### :yin_yang: C/C++
 * [C基础](C/C基础.md)
 * [C++基础](C++/C++基础.md)
 
-### Python
+### :zap: Python
 * [Python基础](Python/Python基础.md)
 * [爬虫例子](Python/一个图片爬虫例子.md)
 * [bilibili视频爬虫](Python/bili视频爬虫.md)
 
-### 计算机网络
+### :apple: 计算机网络
 * [计算机网络概述](计算机网络/001.计算机网络概述.md)
 * [物理层](计算机网络/002.物理层.md)
 * [数据链路层](计算机网络/003.数据链路层.md)
@@ -112,7 +112,7 @@
 * [传输层](计算机网络/005.传输层.md)
 * [应用层](计算机网络/006.应用层.md)
 
-### 计算机组成原理
+### :bamboo:计算机组成原理
 * [计算机系统概述](计算机组成原理/001.计算机系统概述.md)
 * [数据的表示和运算](计算机组成原理/002.数据的表示和运算.md)
 * [存储系统](计算机组成原理/003.存储系统.md)
@@ -121,7 +121,7 @@
 * [总线](计算机组成原理/006.总线.md)
 * [IO系统](计算机组成原理/007.IO系统.md)
 
-### 数据结构
+### :fallen_leaf: 数据结构
 * [绪论](数据结构/001.绪论.md)
 * [线性表](数据结构/002.线性表.md)
 * [栈和队列](数据结构/003.栈和队列.md)
@@ -131,14 +131,14 @@
 * [查找](数据结构/007.查找.md)
 * [排序](数据结构/008.排序.md)
 
-### 操作系统
+### :fountain_pen: ​操作系统
 * [计算机系统概述](操作系统/001.计算机系统概述.md)
 * [进程管理](操作系统/002.进程管理.md)
 * [内存管理](操作系统/003.内存管理.md)
 * [文件管理](操作系统/004.文件管理.md)
 * [输入输出（IO）管理](操作系统/005.输入输出（IO）管理.md)
 
-### 密码学
+### :balloon: 密码学
 
 * [密码学概述](密码学/001.密码学概述.md)
 * [凯撒密码](密码学/002.凯撒密码.md)
@@ -147,7 +147,7 @@
 * [非对称加密](密码学/005.非对称加密.md)
 * [数字签名](密码学/006.数字签名.md)
 
-### 设计模式
+###  :gift_heart: 设计模式
 * [设计模式七大原则](设计模式/001.设计模式七大原则.md)
 * [设计模式简介](设计模式/002.设计模式简介.md)
 * [UML](设计模式/003.UML.md)
@@ -179,7 +179,7 @@
   * [解释器模式](设计模式/026.行为型模式_解释器模式.md)
 * [模式对比](设计模式/027.模式对比.md)
 
-### :beach_umbrella: 其他
+### :beach_umbrella:  其他
 
 * [面经]()
 
