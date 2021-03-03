@@ -1122,3 +1122,32 @@ bindService(Intent service, ServiceConnection conn, int flags)。
 * Messenger
 * AIDL
 
+### 75 将一个Activity设置成窗口的样式？
+
+```xml
+android:theme="@android:style/Theme.Dialog"
+```
+
+### 76 HandlerThread
+
+* HandlerThread 本质是一个线程类，继承了 Thread；
+* HandlerThread 有自己的内部 Looper 对象，可以进行looper循环；
+* 通过获取 HandlerThread 的 Looper 对象传递给Handler对象，可以在 handleMessage方法中执行异步任务；
+* 创建HandlerThread后必须先调用HandlerThread.start()方法，Thread会先调用run方法，创建Looper对象。
+
+### 77 IntentService
+
+其实就是 Service + HandlerThread。
+
+* IntentService是继承自 Service 并处理异步请求的一个类，在 IntentService 内有一个工作线程来处理耗时操作。
+* 当任务执行完后，IntentService 会自动停止，不需要我们去手动结束。
+* 如果启动 IntentService 多次，那么每一个耗时操作会以工作队列的方式在 IntentService 的 **onHandleIntent** 回调方法中执行，依次去执行，使用**串行**的方式，执行完自动结束。
+
+### 78 说说 scheme 跳转协议？
+
+Android中的 Scheme 是一种**页面跳转协议**，和网站通过URL的形式访问一样，APP同样可以通过这种方式进行跳转，可以满足以下需求：
+
+- 当应用接收到 Push，点击通知栏消息跳转到特定页面，比如商品详情等。
+- 通过服务器下发的跳转路径，客户端可以根据路径跳转相应页面。
+- 应用跳转到其他 APP 指定页面。
+- H5页面点击锚点，APP端跳转具体页面。
