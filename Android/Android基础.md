@@ -298,7 +298,7 @@ dialog.getWindow().setType(WindowManager.LayoutParams.TYPE_SYSTEM_ALERT)
 
 ### 23 编译期注解跟运行时注解有何不同？
 
-编译期注解：RetentionPolicy.CLASS，作用域 class 字节码上，生命周期只有在编译器间有效，常使用 APT（注解处理器）+ JavaPoet（Java源代码生成框架），EventBus、Dagger、Retrofit 等使用。
+编译期注解：RetentionPolicy.CLASS，作用域 class 字节码上，生命周期只有在编译器间有效，常使用 APT（注解处理器）+ JavaPoet（Java源代码生成框架），EventBus、Dagger 等使用。
 
 运行时注解：RetentionPolicy.RUNTIME，注解不仅被保存到 class 文件中，jvm 加载 class 文件之后，仍然存在；获取注解，需要通过反射来获取运行时注解。
 
@@ -900,15 +900,7 @@ RGB_565 每个像素占用2byte内存
 
 * 音乐播放器
 * 大图查看
-* 多模块应用等
-
-#### Activity、Intent、Service 是什么关系
-
-Activity 和 Service 都是 Android 四大组件之一。都是 Context 类的子类 **ContextWrapper** 的子类。
-
-* Activity 负责用户界面的显示和交互。
-* Service 负责后台任务的处理。
-* Activity 和 Service 之间可以通过 Intent 传递数据，可以把 Intent 看作是通信使者。
+* 多模块应用
 
 ### 46 Bitmap 的 recycler()
 
@@ -1016,6 +1008,9 @@ traceview 是 Android 平台特有的数据采集和分析工具，它主要用�
 
 ### 57  实现竖向的 TextView？TextView 文字描边效果？
 
+* [竖向的 TextView](https://blog.csdn.net/wei1583812/article/details/56678110)
+* 使用TextPaint绘制相同文字在TextView的底部，TextPaint的字显示要比原始的字大一些，这样看起来就像是有描边的文字。
+
 ### 58 Service 是否在 main thread 中执行, service 里面是否能执行耗时的操作?
 
 默认情况，如果没有显示的指 service 所运行的进程, Service 和 activity 是运行在当前 app 所在进程的 main thread(**UI 主线程**)里面。
@@ -1082,6 +1077,10 @@ bindService(Intent service, ServiceConnection conn, int flags)。
 * 请求处理完成后，IntentService 会自动停止，无需调用 stopSelf() 停止 Service； 
 
 ### 66 说说 Activity、Intent、Service 是什么关系？
+
+#### Activity、Intent、Service 是什么关系
+
+Activity 和 Service 都是 Android 四大组件之一。都是 Context 类的子类 **ContextWrapper** 的子类。
 
 * Activity 和 Service 都是 Context 类的子类ContextWrapper 的子类
 
@@ -1151,3 +1150,75 @@ Android中的 Scheme 是一种**页面跳转协议**，和网站通过URL的形�
 - 通过服务器下发的跳转路径，客户端可以根据路径跳转相应页面。
 - 应用跳转到其他 APP 指定页面。
 - H5页面点击锚点，APP端跳转具体页面。
+
+### 79 简单说说 LinearLayout、FrameLayout、RelativeLayout 性能？
+
+* RelativeLayout 会对子View做两次 measure
+* 如果 LinearLayout 中有weight属性，则也需要进行两次 measure，但即便如此，应该仍然会比RelativeLayout的情况好一点。
+* RelativeLayout 的 子 View 如果高度和RelativeLayout不同，会引发效率问题，当子View很复杂时，这个问题会更加严重。如果可以，尽量使用 padding 代替 margin。
+
+### 80 如何导入外部数据库
+
+* 把原数据库放到 res/raw
+* 把数据库复制到 /data/data/com.（package name）/ 目录下
+
+### 81 如何保证Service不被杀死？
+
+- 利用onStartCommand方法中，返回START_STICKY
+- 提高优先级：android:priority="1000"
+- onDestroy 方法里重启 Service
+- 使用 startForeground 将 service 放到前台状态，提升service进程优先级
+
+### 82 说一说支付流程？
+
+[客户端 Android 集成流程](https://opendocs.alipay.com/open/204/105296/)
+
+* 在支付宝开放平台创建应用，添加功能并签约，配置密钥。
+
+* 导入支付宝 SDK
+
+### 83 说说 AndroidManifest.xml？
+* 是整个应用的主配置清单文件，用于记录应用的相关配置信息，包括应用的包名、组件、权限等。
+* 申明组件（四大组件）
+
+### 84 为什么 bindService 可以跟Activity生命周期联动？
+
+* bindService 方法执行时，LoadedApk 会记录 ServiceConnection 信息。
+
+* Activity 执行 finish 方法时，会通过 LoadedApk 检查 Activity 是否存在未注销/解绑的 BroadcastReceiver 和 ServiceConnection，如果有，那么会通知 AMS 注销/解绑对应的 BroadcastReceiver 和 Service，并打印异常信息，告诉用户应该主动执行注销/解绑的操作。
+
+### 85 oom 是否可以try catch ？
+
+可以，在try语句中声明了很大的对象，导致OOM，但是不合理，谨慎使用。
+
+### 86 如何绕过 9.0 限制
+
+* **通过某种方式修改函数的执行流程** （**inline hook**）
+* **以系统类的身份去反射**
+  - 直接把我们自己变成系统类
+  - 借助系统类去调用反射（通过 「元反射」来反射调用 `VMRuntime.setHiddenApiExemptions` 将要使用的隐藏 API 全部都豁免掉了）
+  - 参考：https://github.com/tiann/FreeReflection
+
+[Android9.0非SDK接口限制](Android9.0非SDK接口限制.md)
+
+### 87 你是如何做单元测试的？
+
+- 单元测试（Junit4、Mockito、PowerMockito、Robolectric）
+- UI测试（Espresso、Example）
+- 压力测试（Monkey）
+
+[Android单元测试只看这一篇就够了 ](https://www.jianshu.com/p/aa51a3e007e2)
+
+### 88 非UI线程可以更新UI吗?
+
+可以，viewRootImp 的创建是在 Activity中 onResume 方法中创建的，我们可以单独开启了线程在 onCreate 里，它逃过了viewRootImp的创建，所以不会抛异常，但是线程一旦阻塞两秒了，viewRootImp 已经创建好了，所以能检查到。
+
+```java
+void checkThread() {
+    if (mThread != Thread.currentThread()) {
+        throw new CalledFromWrongThreadException(
+                "Only the original thread that created a view hierarchy can touch its views.");
+    }
+}
+```
+
