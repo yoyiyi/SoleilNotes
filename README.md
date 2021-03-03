@@ -11,7 +11,7 @@
 
 | Android | 算法 | C/C++ | Python | 计算机网络 | 计算机组成原理 | 数据结构 | 操作系统 | 密码学 | 设计模式 | 其他 |
 | :-----------------------------:      | :----: | :-----: | :------: | :----------: | :--------------: | :--------: | :--------: | :------: | :--------: | :----: |
-| [:hot_pepper:](#hot_pepper-Android)  | [:aerial_tramway:](#aerial_tramway-算法) | [:yin_yang:](#yin_yang-C/C++) | [:zap:](#zap-Python) | [:apple:](#apple-计算机网络) | [:bamboo:](#bamboo-计算机组成原理) | [:fallen_leaf:](#fallen_leaf-组成原理) | [:fountain_pen:](#fountain_pen-数据结构) | [:balloon:](#balloon-操作系统) | [:gift_heart:](#gift_heart-密码学) | [:beach_umbrella:](#beach_umbrella-其他) |
+| [:hot_pepper:](#hot_pepper-Android)  | [:aerial_tramway:](#aerial_tramway-算法) | [:yin_yang:](#yin_yang-C/C++) | [:zap:](#zap-Python) | [:apple:](#apple-计算机网络) | [:bamboo:](#bamboo-计算机组成原理) | [:fallen_leaf:](#fallen_leaf-操作系统) | [:fountain_pen:](#fountain_pen-数据结构) | [:balloon:](#balloon-密码学) | [:gift_heart:](#gift_heart-设计模式) | [:beach_umbrella:](#beach_umbrella-其他) |
 
 <br>
 
