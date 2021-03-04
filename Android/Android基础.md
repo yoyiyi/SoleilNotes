@@ -1222,3 +1222,236 @@ void checkThread() {
 }
 ```
 
+### 89  怎么控制另外一个进程的View显示？
+
+RemoteViews
+
+### 90 Android 程序运行时权限与文件系统权限
+
+* 运行时权限 Dalvik ( android授权)
+* 文件系统 linux 内核授权
+
+### 91 SurfaceView、TextureView、SurfaceTexture、GLSurfaceView？
+
+- SurfaceView：使用双缓冲机制，有自己的 surface，在一个独立的线程里绘制，Android7.0之前不能平移、缩放
+- TextureView：持有 SurfaceTexture，将图像处理为 OpenGL 纹理更新到 HardwareLayer，必须开启硬件加速，Android5.0之前在主线程渲染，之后有独立的渲染线程，可以平移、旋转、缩放
+- SurfaceTexture：将图像流转为 OpenGL 外部纹理，不直接显示
+- GLSurfaceView：加入 EGL 管理，自带 GL 上下文和 GL 渲染线程
+
+### 92 Scroller 原理？
+
+```java
+//1.创建一个Scroller对象，一般在View的构造器中创建
+ mScroller = new Scroller(context);
+
+//2.重写 View 的 computeScroll()
+@Override
+public void computeScroll() {
+  super.computeScroll();
+  if (mScroller.computeScrollOffset()) {
+    scrollTo(mScroller.getCurrX(), mScroller.getCurrY());
+    postInvalidate();
+  }
+}
+
+//3.调用startScroll()方法，startX和startY为开始滚动的坐标点，dx和dy为对应的偏移量
+mScroller.startScroll (int startX, int startY, int dx, int dy);
+invalidate();
+```
+
+* 在 mScroller.startScroll() 中为滑动做初始化准备，比如：起始坐标，滑动的距离和方向以及持续时间(有默认值)，动画开始时间等。
+
+* mScroller.computeScrollOffset() 根据当前已经消逝的时间来计算当前的坐标点。因为在mScroller.startScroll()中设置了动画时间，那么在computeScrollOffset()方法中依据已经消逝的时间就很容易得到当前时刻应该所处的位置并将其保存在变量 mCurrX 和 mCurrY 中，除此之外该方法还可判断动画是否已经结束。
+
+### 93  RecyclerView 的性能优化
+
+**1、数据处理与视图绑定分离**
+
+RecyclerView 的 bindViewHolder 方法是在 UI 线程进行的，如果在该方法进行耗时操作，将会影响滑动的流畅性。
+
+**2、数据优化**
+
+分页加载数据；
+
+对于新增或删除数据通过DiffUtil，来进行局部数据刷新；
+
+**3、布局优化**
+
+减少过度绘制。
+
+减少布局层级，可以考虑使用自定义 View 来减少层级，或者更合理的设置布局来减少层级。
+
+**4、减少xml文件inflate时间**
+
+使用 即new View()的方式创建布局，因为 xml 文件包括：layout、drawable 的 xml，xml 文件 inflate 出 ItemView 是通过耗时的 IO 操作。
+
+**5、减少 View 对象的创建**
+
+一个稍微复杂的 Item 会包含大量的 View，而大量的 View 的创建也会消耗大量时间，所以要尽可能简化 ItemView；设计 ItemType 时，对多 ViewType 能够共用的部分尽量设计成自定义 View，减少 View 的构造和嵌套。
+
+**6、设置高度固定**
+
+如果item高度是固定的话，可以使用 **RecyclerView.setHasFixedSize(true)**，来避免requestLayout浪费资源。
+
+**7、共用RecycledViewPool**
+
+在嵌套RecyclerView中，如果子RecyclerView具有相同的adapter，那么可以设置RecyclerView.setRecycledViewPool(pool)来共用一个RecycledViewPool。
+
+**Note**: 如果LayoutManager是LinearLayoutManager或其子类，需要手动开启这个特性：layout.setRecycleChildrenOnDetach(true)。
+
+**8、RecyclerView数据预取**
+
+RecyclerView25.1.0及以上版本增加了Prefetch功能。
+
+用于嵌套RecyclerView获取最佳性能。
+
+详细分析：[RecyclerView 数据预取](https://links.jianshu.com/go?to=https%3A%2F%2Fjuejin.im%2Fentry%2F58a3f4f62f301e0069908d8f)。
+
+**9、加大RecyclerView的缓存**
+
+用空间换时间，来提高滚动的流畅性。
+
+```java
+recyclerView.setItemViewCacheSize(20);
+recyclerView.setDrawingCacheEnabled(true);
+recyclerView.setDrawingCacheQuality(View.DRAWING_CACHE_QUALITY_HIGH);
+```
+
+**10、增加RecyclerView预留的额外空间**
+
+额外空间：显示范围之外，应该额外缓存的空间
+
+```java
+new LinearLayoutManager(this{
+@Override
+protected int getExtraLayoutSpace(RecyclerView.Statestate){
+    return size;
+  }
+};
+```
+
+**11、减少ItemView监听器的创建**
+
+对ItemView设置监听器，不要对每个item都创建一个监听器，而应该共用一个XxListener，然后根据ID来进行不同的操作，优化了对象的频繁创建带来的资源消耗。
+
+**12、优化滑动操作**
+
+设置 RecyclerView.addOnScrollListener() 来在滑动过程中停止加载的操作。
+
+**13、刷新闪烁**
+
+调用notifyDataSetChange时，适配器不知道整个数据集中的那些内容以及存在，再重新匹配ViewHolder时会发生闪烁。
+
+设置adapter.setHasStableIds(true)，并重写getItemId()来给每个Item一个唯一的ID
+
+**14、回收资源**
+
+通过重写RecyclerView.onViewRecycled(holder)来回收资源。
+
+[RecyclerView 性能优化](https://www.jianshu.com/p/1853ff1e8de6)
+
+### 94 ListView 与 RecyclerView 简单对比?
+
+**缓存区别：**
+
+- 层级不同：ListView有两级缓存，在屏幕与非屏幕内。RecyclerView比ListView多两级缓存，支持多个离屏ItemView缓存（匹配pos获取目标位置的缓存，如果匹配则无需再次bindView），支持开发者自定义缓存处理逻辑，支持所有RecyclerView共用同一个RecyclerViewPool(缓存池)。
+- 缓存不同：ListView缓存View。RecyclerView缓存RecyclerView.ViewHolder，抽象可理解为：
+  View + ViewHolder(避免每次createView时调用findViewById) + flag(标识状态)；
+
+**优点**
+RecylerView提供了局部刷新的接口，通过局部刷新，就能避免调用许多无用的bindView。
+RecyclerView的扩展性更强大（LayoutManager、ItemDecoration等）。
+
+### 95 Android类加载器
+
+Android 中常用的有两种类加载器：
+
+* DexClassLoader
+
+* PathClassLoader
+
+  它们都继承于 BaseDexClassLoader。区别在于调用父类构造器时，DexClassLoader 多传了一个optimizedDirectory 参数，这个目录必须是内部存储路径，用来缓存系统创建的 Dex 文件。而PathClassLoader该参数为null，只能加载内部存储目录的 Dex 文件。所以我们可以用 DexClassLoader 去加载外部的apk。
+
+### 96 onStart()与onResume()有什么区别？
+
+* `onStart()` 是 `Activity` 界面被显示出来的时候执行的，但不能与它交互；
+* `onResume()` 是 当该 `Activity` 与用户能进行交互时被执行，用户可以获得它的焦点，能够与其交互。
+
+### 97  Looper.loop()为什么不会阻塞主线程？
+
+Android是基于事件驱动的，即所有Activity的生命周期都是通过Handler事件驱动的。loop方法中会调用MessageQueue的next方法获取下一个message，当没有消息时，基于 Linux pipe/epoll 机制会阻塞在loop的queue.next() 中的 nativePollOnce() 方法里，并不会消耗CPU。
+
+### 98 说说 IdleHandler 
+
+闲时机制，当消息队列空闲时会执行`IdelHandler`的`queueIdle()`方法，该方法返回一个`boolean`值，如果为`false`则执行完毕之后移除这条消息，如果为`true`则保留，等到下次空闲时会再次执行，
+
+IdleHandler 是一个回调接口，可以通过MessageQueue的addIdleHandler添加实现类。
+
+### 99 同步屏障机制(sync barrier)
+
+Message 分为3种：
+
+* 普通消息（同步消息）
+* 屏障消息（同步屏障）
+* 异步消息
+
+我们通常使用的都是普通消息，而屏障消息就是在消息队列中插入一个屏障，在屏障之后的所有普通消息都会被挡着，不能被处理。不过异步消息却例外，屏障不会挡住异步消息，因此可以这样认为：**屏障消息就是为了确保异步消息的优先级，设置了屏障后，只能处理其后的异步消息，同步消息会被挡住，除非撤销屏障。**
+
+同步屏障可以通过 MessageQueue.postSyncBarrier 函数来设置。该方法发送了一个没有 target 的 Message到Queue 中，在 next 方法中获取消息时，如果发现没有 target 的 Message，则在一定的时间内跳过同步消息，优先执行异步消息。再换句话说，同步屏障为 Handler 消息机制增加了一种简单的优先级机制，异步消息的优先级要高于同步消息。在创建 Handle r时有一个 async 参数，传 true 表示此 handler 发送的时异步消息。ViewRootImpl.scheduleTraversals 方法就使用了同步屏障，保证UI绘制优先执行。
+
+### 100 getWidth() 和 getMeasureWidth() 区别
+
+* getMeasureWidth()：measure() 获取到，值通过setMeasuredDimension()方法来进行设置的
+* getWidth()：layout() 获取到，值通过视图右边的坐标减去左边的坐标计算出来的。
+
+### 101 requestLayout，invalidate，postInvalidate 之间的区别？
+
+* requestLayout：会重新调用onMeasure、onLayout、onDraw 来刷新界面。
+* invalidate：调用 onDraw() 来刷新界面。调用 invalidate()，会为该View添加一个标记位，同时不断向父容器请求刷新，父容器通过计算得出自身需要重绘的区域，直到传递到ViewRootImpl中，最终触发performTraversals方法，进行开始View树重绘流程(只绘制需要重绘的视图)。
+* postInvalidate ：调用onDraw() 来刷新界面，在非UI线程中调用。
+
+[Android View 深度分析requestLayout、invalidate与postInvalidate](https://blog.csdn.net/a553181867/article/details/51583060?utm_medium=distribute.pc_relevant_t0.none-task-blog-BlogCommendFromMachineLearnPai2-1.baidujs&dist_request_id=1328592.24703.16148391637091151&depth_1-utm_source=distribute.pc_relevant_t0.none-task-blog-BlogCommendFromMachineLearnPai2-1.baidujs)
+
+### 102 apk安装流程
+
+- 复制 APK 到 /data/app 目录下，解压并扫描安装包。
+- 资源管理器解析 APK 里的资源文件。
+- 解析 AndroidManifest.xml，并在 /data/data/ 目录下创建对应的应用数据目录。
+- 对 dex 文件进行优化，并保存在 dalvik-cache目录下。
+- 将 AndroidManifest.xml 解析出的四大组件信息注册到 PackageManagerService 中。
+- 安装完成后，发送广播。
+
+### 103 apk打包流程
+
+![](../asset/apk签名过程.jpg)
+
+* 打包资源文件，生成 R.java 文件
+  - aapt 工具（aapt.exe） -> AndroidManifest.xml 和 布局文件 XMl 都会编译 -> R.java -> AndroidManifest.xml 会被 aapt 编译成二进制
+  - res 目录下资源 -> 编译，变成二进制文件，生成 resource id -> 最后生成 resouce.arsc（文件索引表）
+* 处理 aidl 文件，生成相应的 Java 文件
+  * aidl 工具（aidl.exe）
+* 编译项目源代码，生成 class 文件
+* 转换所有 class 文件，生成 classes.dex 文件
+  * dx.bat
+* 打包生成 APK 文件
+  * apkbuilder 工具打包到最终的 .apk 文件中
+* 对APK文件进行签名
+* 对签名后的 APK 文件进行对齐处理（正式包）
+  * 对 APK 进行对齐处理，用到的工具是 zipalign
+
+### 104 app 瘦身
+
+* 代码混淆
+* 使用 lint 去除无用资源
+* 去除无用国际化支持
+* 切一套图 xxhdpi 或 xhdpi
+* 图片压缩， png 压缩或者使用webP图片
+* 使用矢量图形，简单的图标可以使用矢量图片
+
+### 105 64k
+
+Android 应用 (APK) 文件包含 [Dalvik](https://source.android.google.cn/devices/tech/dalvik/) Executable (DEX) 文件形式的可执行字节码文件，这些文件包含用来运行应用的已编译代码。Dalvik Executable 规范将可在单个 DEX 文件内引用的方法总数限制为 65536，其中包括 Android 框架方法、库方法以及您自己的代码中的方法。
+
+* **检查应用的直接依赖项和传递依赖项**
+* **通过 R8 移除未使用的代码**
+
