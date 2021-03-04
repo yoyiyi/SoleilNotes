@@ -1459,3 +1459,197 @@ Android 应用 (APK) 文件包含 [Dalvik](https://source.android.google.cn/devi
 * **检查应用的直接依赖项和传递依赖项**
 * **通过 R8 移除未使用的代码**
 
+### 106 Android 系统架构
+
+* 应用层
+* 应用框架层
+* 系统运行库层
+* HAL
+* Linux 内核层
+
+### 107 遇到 Fragment 哪些问题？
+
+* getActivity() 空指针：一般在异步任务中，Fragment 已经 onDetach()，可以使用全局变量 mActivity，onAttach() 方法里赋值。
+
+* 视图重叠：重复加载了同一个 Fragment 导致重叠
+
+  ```java
+  @Override 
+  protected void onCreate(@Nullable Bundle savedInstanceState) {
+  // 在页面重启时，Fragment会被保存恢复，而此时再加载Fragment会重复加载，导致重叠 ;
+      if(saveInstanceState == null){
+      // 或者 if(findFragmentByTag(mFragmentTag) == null)
+         // 正常情况下去 加载根Fragment 
+      } 
+  }
+  ```
+
+  ### 108 View 绘制
+
+  1. onMeasure：测量视图的大小，从顶层父View到子View递归调用measure()方法，measure()调用onMeasure()方法，onMeasure()方法完成测量工作。
+  2. onLayout：确定视图的位置，从顶层父View到子View递归调用layout()方法，父View将上一步measure()方法得到的子View的布局大小和布局参数，将子View放在合适的位置上。
+  3. onDraw：绘制最终的视图，首先ViewRoot创建一个Canvas对象，然后调用onDraw()方法进行绘制。onDraw()方法的绘制流程为：
+     1. 绘制视图背景。
+     2. 绘制画布的图层。
+     3. 绘制View内容。
+     4. 绘制子视图，如果有的话。
+     5. 还原图层。
+     6. 绘制滚动条。 
+
+### 108 Binder 机制
+
+传统的 Linux 进程通信。
+
+1. 管道：在创建时分配一个page大小的内存，缓存区大小比较有限；
+2. 消息队列：信息复制两次，额外的CPU消耗；不合适频繁或信息量大的通信；
+3. 共享内存：无须复制，共享缓冲区直接付附加到进程虚拟地址空间，速度快；但进程间的同步问题操作系统无法实现，必须各进程利用同步工具解决；
+4. 套接字：作为更通用的接口，传输效率低，主要用于不通机器或跨网络的通信；
+5. 信号量：常作为一种锁机制，防止某进程正在访问共享资源时，其他进程也访问该资源。因此，主要作为进程间以及同一进程内不同线程之间的同步手段。
+6. 信号: 不适用于信息交换，更适用于进程中断控制，比如非法内存访问，杀死某个进程等；
+
+Android 的 Binder 机制
+
+![](../asset/binder机制.jpg)
+
+Binder通信的四个角色：
+
+* Client进程：使用服务的进程。
+* Server进程：提供服务的进程。
+* ServiceManager进程：ServiceManager的作用是将字符形式的Binder名字转化成Client中对该Binder的引用，使得Client能够通过Binder名字获得对Server中Binder实体的引用。
+* Binder驱动：驱动负责进程之间Binder通信的建立，Binder在进程之间的传递，Binder引用计数管理，数据包在进程之间的传递和交互等一系列底层支持。
+
+#### 为什么Binder只进行了一次数据拷贝？
+
+Linux 进程通信，需要先用 copy_from_user() 拷贝到内核空间，再用 copy_to_user()拷贝到另一个用户空间。
+
+为了实现用户空间到用户空间的拷贝，mmap() 分配的内存除了映射进了接收方进程里，还映射进了内核空间。所以调用copy_from_user()将数据拷贝进内核空间也相当于拷贝进了接收方的用户空间，这就是Binder只需一次拷贝的‘秘密’。
+
+最底层的是 Android的 ashmen(Anonymous shared memory) 机制，它负责辅助实现内存的分配，以及跨进程所需要的内存共享。AIDL(android interface definition language)对Binder的使用进行了封装，可以让开发者方便的进行方法的远程调用，后面会详细介绍。Intent是最高一层的抽象，方便开发者进行常用的跨进程调用。
+
+从英文字面上意思看，Binder具有粘结剂的意思那么它是把什么东西粘接在一起呢？在Android系统的Binder机制中，由一系统组件组成，分别是Client、Server、Service Manager和Binder驱动，其中Client、Server、Service Manager运行在用户空间，Binder驱动程序运行内核空间。Binder就是一种把这四个组件粘合在一起的粘连剂了，其中，核心组件便是Binder驱动程序了，ServiceManager提供了辅助管理的功能，Client和Server正是Binder驱动和ServiceManager提供的基础设施上，进行Client-Server之间的通信。
+
+
+参考阅读：
+
+* [简单理解Binder机制的原理](https://blog.csdn.net/augfun/article/details/82343249)
+
+* [Android跨进程通信：图文详解 Binder机制](https://blog.csdn.net/carson_ho/article/details/73560642)
+
+* [写给 Android 应用工程师的 Binder 原理剖析](https://juejin.im/post/5acccf845188255c3201100f)
+
+* [Binder学习指南](http://weishu.me/2016/01/12/binder-index-for-newer/)
+
+* [Binder设计与实现](https://blog.csdn.net/universus/article/details/6211589)
+
+* [老罗Binder机制分析系列或Android系统源代码情景分析Binder章节](https://blog.csdn.net/luoshengyang/article/details/6618363)
+
+#### binder 驱动
+
+* 从 Java 层来看就像访问本地接口一样，客户端基于 BinderProxy ，服务端基于 IBinder 对象
+* 从 native 层来看来看客户端基于 BpBinder 到 ICPThreadState 到 binder 驱动，服务端由 binder 驱动唤醒 IPCThreadSate 到 BbBinder 。
+* 跨进程通信的原理最终是要基于内核的，所以最会会涉及到 binder_open 、binder_mmap 和 binder_ioctl这三种系统调用。
+
+### 109 如何解决View的事件冲突？
+
+常见开发中事件冲突的有ScrollView与RecyclerView的滑动冲突、RecyclerView 内嵌同时滑动同一方向。
+
+滑动冲突的处理规则：
+
+- 对于由于外部滑动和内部滑动方向不一致导致的滑动冲突，可以根据滑动的方向判断谁来拦截事件。
+- 对于由于外部滑动方向和内部滑动方向一致导致的滑动冲突，可以根据业务需求，规定何时让外部View拦截事件，何时由内部View拦截事件。
+- 对于上面两种情况的嵌套，相对复杂，可同样根据需求在业务上找到突破点。
+
+滑动冲突的实现方法：
+
+- 外部拦截法：指点击事件都先经过父容器的拦截处理，如果父容器需要此事件就拦截，否则就不拦截。具体方法：需要重写父容器的 onInterceptTouchEvent 方法，在内部做出相应的拦截。
+- 内部拦截法：指父容器不拦截任何事件，而将所有的事件都传递给子容器，如果子容器需要此事件就直接消耗，否则就交由父容器进行处理。具体方法：需要配合requestDisallowInterceptTouchEvent 方法。
+
+### 110 SharePreference性能优化
+
+SharePreferences是一个轻量级的存储类，特别适合用于保存软件配置参数。使用SharedPreferences保存数据，用 xml 文件存放数据，文件存放在/data/data/ < package name > /shared_prefs目录。
+
+SharePreferences 在创建的时候会把整个文件全部加载进内存，如果SharedPreference文件比较大，会带来以下问题：
+
+1. 第一次从sp中获取值的时候，有可能阻塞主线程，使界面卡顿、掉帧。
+2. 解析sp的时候会产生大量的临时对象，导致频繁GC，引起界面卡顿。
+3. 这些 key 和 value 会永远存在于内存之中，占用大量内存。
+
+优化建议
+
+1. 不要存放大的 key 和 value，会引起界面卡、频繁 GC、占用内存等等。
+2. 毫不相关的配置项就不要放在在一起，文件越大读取越慢。
+3. 读取频繁的 key 和不易变动的 key 尽量不要放在一起，影响速度，如果整个文件很小，那么忽略吧，为了这点性能添加维护成本得不偿失。
+4. 不要乱 edit 和 apply，尽量批量修改一次提交，多次 apply 会阻塞主线程。
+5. 尽量不要存放 JSON 和 HTML，这种场景请直接使用 JSON。
+6. sp 无法进行跨进程通信，MODE_MULTI_PROCESS 只是保证了在 API 11 以前的系统上，如果 sp 已经被读取进内存，再次获取这个 sp 的时候，如果有这个 flag，会重新读一遍文件，仅此而已。
+
+### 111 SQLite升级
+
+数据库升级增加表和删除表都不涉及数据迁移，但是修改表涉及到对原有数据进行迁移。升级的方法如下所示：
+
+1. 将现有表命名为临时表。
+2. 创建新表。
+3. 将临时表的数据导入新表。
+4. 删除临时表。
+
+重写
+
+如果是跨版本数据库升级，可以由两种方式，如下所示：
+
+1. 逐级升级，确定相邻版本与现在版本的差别，V1升级到V2,V2升级到V3，依次类推。
+2. 跨级升级，确定每个版本与现在数据库的差别，为每个case编写专门升级大代码。
+
+### 112 内存缓存和磁盘缓存是怎么实现的？
+
+内存缓存基于 LruCache 实现，磁盘缓存基于 DiskLruCache 实现。这两个类都基于Lru算法和LinkedHashMap 来实现。
+
+```java
+LRU 是Least Recently Used的缩写，最近最久未使用算法，它的核心原则是如果一个数据在最近一段时间没有使用到，那么它在将来被访问到的可能性也很小，则这类数据项会被优先淘汰掉。
+```
+
+为什么会选择LinkedHashMap 呢？
+
+这跟 LinkedHashMap的特性有关，LinkedHashMap的构造函数里有个布尔参数 **accessOrder**，当它为 true 时，LinkedHashMap会以访问顺序为序排列元素，否则以插入顺序为序排序元素。
+
+### 113 PathClassLoader与DexClassLoader有什么区别？
+
+- PathClassLoader：只能加载已经安装到Android系统的APK文件，即/data/app目录，Android默认的类加载器。
+- DexClassLoader：可以加载任意目录下的dex、jar、apk、zip文件。
+
+### 114 WebView优化
+
+出现原因：在客户端中，加载 H5 页面之前，需要先初始化WebView，在WebView完全初始化完成之前，后续的界面加载过程都是被阻塞的。
+
+优化入手：
+
+1. 预加载WebView。
+2. 加载WebView的同时，请求H5页面数据。
+
+常见方法：
+
+1. 全局 WebView。
+2. 客户端代理页面请求，WebView 初始化完成后向客户端请求数据。
+3. asset 存放离线包。
+
+除此之外还有一些其他的优化手段：
+
+- 脚本执行慢，可以让脚本最后运行，不阻塞页面解析。
+- DNS与链接慢，可以让客户端复用使用的域名与链接。
+- React框架代码执行慢，可以将这部分代码拆分出来，提前进行解析。
+
+### 115 什么是MeasureSpec？
+
+MeasureSpec 代表一个32位int值，高两位代表SpecMode（测量模式），低30位代表SpecSize（具体大小）。
+
+SpecMode有三类：
+
+- AT_MOST：父容器指定一个可用大小即SpecSize，view 的大小不能大于这个值，具体多大要看view的具体实现，相当于wrap_content。
+- EXACTLY： 父容器已经检测出view所需的精确大小，这时候view的最终大小SpecSize所指定的值，相当于 match_parent 或指定具体数值。
+- UNSPECIFIED：表示父容器不对View有任何限制，一般用于系统内部，表示一种测量状态；
+
+### 116 Fragment的懒加载实现
+
+Fragment 可见状态改变时会被调用setUserVisibleHint()方法，可以通过复写该方法实现Fragment的懒加载，但需要注意该方法可能在onVIewCreated之前调用，需要确保界面已经初始化完成的情况下再去加载数据，避免空指针。
+
+
+

@@ -130,4 +130,4 @@ typedef const struct JNIInvokeInterface* JavaVM;
 
 ## 5 JNI API
 
-[NI 方法大全及使用示例](https://blog.csdn.net/afei__/article/details/81016413)
+[JNI 方法大全及使用示例](https://blog.csdn.net/afei__/article/details/81016413)
