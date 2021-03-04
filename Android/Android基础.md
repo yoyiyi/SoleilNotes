@@ -1387,6 +1387,8 @@ Android是基于事件驱动的，即所有Activity的生命周期都是通过Ha
 
 IdleHandler 是一个回调接口，可以通过MessageQueue的addIdleHandler添加实现类。
 
+[IdleHandler 原理浅析](https://www.cnblogs.com/wytiger/p/13030199.html)
+
 ### 99 同步屏障机制(sync barrier)
 
 Message 分为3种：
@@ -1398,6 +1400,8 @@ Message 分为3种：
 我们通常使用的都是普通消息，而屏障消息就是在消息队列中插入一个屏障，在屏障之后的所有普通消息都会被挡着，不能被处理。不过异步消息却例外，屏障不会挡住异步消息，因此可以这样认为：**屏障消息就是为了确保异步消息的优先级，设置了屏障后，只能处理其后的异步消息，同步消息会被挡住，除非撤销屏障。**
 
 同步屏障可以通过 MessageQueue.postSyncBarrier 函数来设置。该方法发送了一个没有 target 的 Message到Queue 中，在 next 方法中获取消息时，如果发现没有 target 的 Message，则在一定的时间内跳过同步消息，优先执行异步消息。再换句话说，同步屏障为 Handler 消息机制增加了一种简单的优先级机制，异步消息的优先级要高于同步消息。在创建 Handle r时有一个 async 参数，传 true 表示此 handler 发送的时异步消息。ViewRootImpl.scheduleTraversals 方法就使用了同步屏障，保证UI绘制优先执行。
+
+
 
 ### 100 getWidth() 和 getMeasureWidth() 区别
 
