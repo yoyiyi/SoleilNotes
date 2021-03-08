@@ -46,7 +46,7 @@ fun install(application: Application) {
     val configProvider = { AppWatcher.config }
 	//对 Activity 进行 install， 对 Activity 生命周期 onDestroy 进行观察
     ActivityDestroyWatcher.install(application, objectWatcher, configProvider)
-	//对 Activity 进行 install，与 Activity 类似
+	//对 Fragment 进行 install，与 Activity 类似
     FragmentDestroyWatcher.install(application, objectWatcher, configProvider)
     onAppWatcherInstalled(application)
   }
