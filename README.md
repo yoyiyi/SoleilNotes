@@ -11,7 +11,7 @@
 
 | Android | 算法 | C/C++/Linux | Python | 计算机网络 | 计算机组成原理 | 数据结构 | 操作系统 | 密码学 | 设计模式 | 其他 |
 | :-----------------------------:      | :----: | :-----: | :------: | :----------: | :--------------: | :--------: | :--------: | :------: | :--------: | :----: |
-| [:hot_pepper:](#hot_pepper-Android)  | [:aerial_tramway:](#aerial_tramway-算法) | [:yin_yang:](#yin_yang-C/C++/Linux) | [:zap:](#zap-Python) | [:apple:](#apple-计算机网络) | [:bamboo:](#bamboo-计算机组成原理) | [:fallen_leaf:](#fallen_leaf-操作系统) | [:fountain_pen:](#fountain_pen-数据结构) | [:balloon:](#balloon-密码学) | [:gift_heart:](#gift_heart-设计模式) | [:beach_umbrella:](#beach_umbrella-其他) |
+| [:hot_pepper:](#hot_pepper-Android)  | [:aerial_tramway:](#aerial_tramway-算法) | [:yin_yang:](#yin_yang-C/C++/Linux) | [:zap:](#zap-Python) | [:apple:](#apple-计算机网络) | [:bamboo:](#bamboo-计算机组成原理) | [:fallen_leaf:](#fallen_leaf-操作系统) | [:fountain_pen:](#fountain_pen-操作系统) | [:balloon:](#balloon-密码学) | [:gift_heart:](#gift_heart-设计模式) | [:beach_umbrella:](#beach_umbrella-其他) |
 
 <br>
 
@@ -26,7 +26,7 @@
   * [Android系统启动](Android/Android系统启动.md)
   * [应用进程启动过程](Android/应用程序进程启动过程.md)
   * [Activity启动过程](Android/Activity启动过程.md)
-  * Service启动过程
+  * [Service启动过程](Android/Service启动过程.md)
   * 广播启动过程
   * ContentProvider启动过程
   * Context
@@ -49,7 +49,7 @@
   * [换肤](Android/换肤方案.md)
   * [热修复](Android/热修复.md)
   * [插件化](Android/插件化)
-  * 组件化
+  * [组件化](Android/组件化.md)
   * [Jetpack](Android/Jetpack.md)
   * JNI
   * [MMKV](Android/MMKV.md)
@@ -134,7 +134,7 @@
 * [查找](数据结构/007.查找.md)
 * [排序](数据结构/008.排序.md)
 
-### :fountain_pen:操作系统
+### :fountain_pen: 操作系统
 * [计算机系统概述](操作系统/001.计算机系统概述.md)
 * [进程管理](操作系统/002.进程管理.md)
 * [内存管理](操作系统/003.内存管理.md)
