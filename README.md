@@ -9,7 +9,7 @@
 </div>
 <br>
 
-| Android | 算法 | C/C++ | Python | 计算机网络 | 计算机组成原理 | 数据结构 | 操作系统 | 密码学 | 设计模式 | 其他 |
+| Android | 算法 | C/C++/Linux | Python | 计算机网络 | 计算机组成原理 | 数据结构 | 操作系统 | 密码学 | 设计模式 | 其他 |
 | :-----------------------------:      | :----: | :-----: | :------: | :----------: | :--------------: | :--------: | :--------: | :------: | :--------: | :----: |
 | [:hot_pepper:](#hot_pepper-Android)  | [:aerial_tramway:](#aerial_tramway-算法) | [:yin_yang:](#yin_yang-C/C++/Linux) | [:zap:](#zap-Python) | [:apple:](#apple-计算机网络) | [:bamboo:](#bamboo-计算机组成原理) | [:fallen_leaf:](#fallen_leaf-操作系统) | [:fountain_pen:](#fountain_pen-数据结构) | [:balloon:](#balloon-密码学) | [:gift_heart:](#gift_heart-设计模式) | [:beach_umbrella:](#beach_umbrella-其他) |
 
@@ -70,7 +70,7 @@
 * 性能优化
   * 稳定性优化
   * 内存优化
-  * 绘制优化
+  * [绘制优化](Android/性能优化/绘制优化.md)
   * [电量优化](Android/电量优化.md)
   * 启动优化
   * [网络优化](Android/网络优化.md)
