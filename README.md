@@ -51,7 +51,7 @@
   * [插件化](Android/插件化)
   * [组件化](Android/组件化.md)
   * [Jetpack](Android/Jetpack.md)
-  * [JNI](Android/JNI.md)
+  * [JNI](NDK/JNI.md)
   * [MMKV](Android/MMKV.md)
   * [Bitmap](Android/Bitmap.md)
   * [Android9.0非SDK接口限制](Android/Android9.0非SDK接口限制.md)
@@ -97,6 +97,7 @@
 * [剑指Offer](算法/剑指Offer.md)
 * [Leetcode](算法/leetcode.md)
 * [TOP100](算法/top100.md)
+* [推荐网站]()
 
 ### :yin_yang: C/C++/Linux
 * [C基础](C/C基础.md)
