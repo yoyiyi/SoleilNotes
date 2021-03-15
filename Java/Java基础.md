@@ -1169,3 +1169,36 @@ int f() {};
 * 再哈希法
 * 链地址法（拉链法）
 * 建立一个公共溢出区
+
+#### 94 装箱和拆箱的原理？
+
+装箱：valueOf
+
+拆箱：类似 intValue()
+
+#### 95 那些状态下 finally 不会被执行？
+
+1. 在 try  或  finally  块中用了  System.exit(0) 退出程序。但是，如果 System.exit(int) 在异常语句之后，finally 还是会被执行；
+2. 程序所在的线程死亡；
+3. 关闭了 CPU；
+
+#### 96 受检异常和不受检异常区别？
+
+受检异常没有被 catch/ throw 处理的话，没法通过编译 。
+
+不受检异常：即使不处理也可以正常通过编译。RuntimeException 及其子类都统称为不受检异常，例如：NullPointerException、NumberFormatException（字符串转换为数字）、ArrayIndexOutOfBoundsException（数组下标越界）、ClassCastException（类型转换错误）、ArithmeticException（算术错误）等。
+
+#### 97  hashCode 和 equals() 规定？
+
+1. 如果两个对象相等，则 hashcode 一定也是相同的；
+2. 两个对象相等,对两个对象分别调用 equals 方法都返回 true；
+3. 两个对象有相同的 hashcode 值，它们也不一定是相等的；
+4. **因此，equals 方法被覆盖过，则 hashCode 方法也必须被覆盖**；
+5. hashCode() 的默认行为是对堆上的对象产生独特值。如果没有重写 hashCode()，则该 class 的两个对象无论如何都不会相等（即使这两个对象指向相同的数据）；
+
+#### 98 线程和进程的区别？
+
+进程：进程是资源分配最小单位；
+
+线程：程序执行的最小单位；
+

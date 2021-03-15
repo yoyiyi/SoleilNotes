@@ -4,7 +4,7 @@
 
 ### 1.1 List
 
-- Arraylist： Object[]数组
+- ArrayList： Object[]数组
 - Vector：Object[]数组
 - LinkedList： 双向链表，JDK1.6 之前为循环链表，JDK1.7 取消了循环
 
@@ -71,7 +71,7 @@
 
 ## 7 HashMap 的长度为什么是 2 的幂次方？
 
-HashMap 为了存取高效，要尽量较少碰撞，就是要尽量把数据分配均匀，每个链表长度大致相同，这个实现就在把数据存到哪个链表中的算法，这个算法实际就是取模，hash % length。计算机中直接求余效率不如**位移运算**，源码中做了优化 hash & (length-1)，hash % length == hash & (length-1) 的前提是 length 是 2 的 n 次方；
+HashMap 为了存取高效，要尽量较少碰撞，就是要尽量把数据分配均匀，每个链表长度大致相同，这个实现就在把数据存到哪个链表中的算法，这个算法实际就是取模，hash % length。计算机中直接求余效率不如**位移运算**，源码中做了优化 hash & (length-1)，**hash % length == hash & (length-1)** 的前提是 length 是 2 的 n 幂次方；
 
 ## 8 Comparable 和 Comparator 的区别？
 
@@ -102,3 +102,69 @@ public interface Comparator<T> {
 }
 ```
 
+## 9 ArrayList 扩容？
+
+调用 grow() -> 初始化为 10 -> 1.5 倍 扩容
+
+```java
+private void grow(int minCapacity) {
+        //oldCapacity:旧容量，newCapacity:新容量
+        int oldCapacity = elementData.length;
+        //将oldCapacity 右移一位，新容量更新为旧容量的 1.5 倍
+        int newCapacity = oldCapacity + (oldCapacity >> 1);
+        //检查新容量是否大于最小需求容量，若小于需求容量，新容量为最小需求容量
+        if (newCapacity - minCapacity < 0)
+            newCapacity = minCapacity;
+        //检查新容量是否超出了最大容量，
+        //超出,调用hugeCapacity()来比较minCapacity和 MAX_ARRAY_SIZE(Integer.MAX_VALUE - 8)
+        //如果 minCapacity 大于MAX_ARRAY_SIZE，则新容量则为Interger.MAX_VALUE，否则，新容量大小则为 MAX_ARRAY_SIZE。
+        if (newCapacity - MAX_ARRAY_SIZE > 0)
+            newCapacity = hugeCapacity(minCapacity);
+        elementData = Arrays.copyOf(elementData, newCapacity);
+    }
+
+    //比较 minCapacity 和 MAX_ARRAY_SIZE
+    private static int hugeCapacity(int minCapacity) {
+        if (minCapacity < 0) // overflow
+            throw new OutOfMemoryError();
+        return (minCapacity > MAX_ARRAY_SIZE) ?
+            Integer.MAX_VALUE :
+            MAX_ARRAY_SIZE;
+    }
+
+
+```
+
+## 10 说说 ArrayList 源码中 ensureCapacity() 作用吧？
+
+```java
+    //增加此 ArrayList 实例的容量，确保可以容纳由minimum capacity参数指定的元素数。
+    public void ensureCapacity(int minCapacity) {
+        int minExpand = (elementData != DEFAULTCAPACITY_EMPTY_ELEMENTDATA)
+            // any size if not default element table
+            ? 0
+            // larger than default for default empty table. It's already
+            // supposed to be at default size.
+            : DEFAULT_CAPACITY;
+
+        if (minCapacity > minExpand) {
+            ensureExplicitCapacity(minCapacity);
+        }
+    }
+```
+
+## 11 HashMap 底层实现
+
+源码一定要仔细看一遍。
+
+1.7：数组 + 链表
+
+1.8 ：当链表长度大于阈值（默认为 8）（将链表转换成红黑树前会判断，如果当前数组的长度小于 64，那么会选择先进行数组扩容，而不是转换为红黑树）时，将链表转化为红黑树，以减少搜索时间。
+
+## 12 ConcurentHashMap 底层实现
+
+源码一定要仔细看一遍。
+
+1.7：Segment 数组结构和 HashEntry 数组结构组成，Segment  继承 ReentrantLock。
+
+1.8：取消了 Segment 分段锁，采用 **CAS 和 synchronized** 来保证并发安全。
