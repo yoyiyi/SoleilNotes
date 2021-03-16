@@ -365,6 +365,10 @@ public class TestAwait {
 //after
 ```
 
+### 2.8 为什么线程启动要调用 start()，而不是直接调用 run()?
+
+调用 start() 可启动线程并使线程进入就绪状态，时间片轮转到，就开始执行，直接执行 run() 的话不会以多线程的方式执行。
+
 ## 3 线程同步
 
 ### 3.1 synchronized
