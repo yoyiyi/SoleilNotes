@@ -383,7 +383,7 @@ private int getParents(View view){
 }
 ```
 
-### 31 Asset 目录与 res 目录的区别？
+### 31 asset 目录与 res 目录的区别？
 
 assets：不会在 R 文件中生成相应标记，存放到这里的资源在打包时会打包到程序安装包中。（通过 AssetManager 类访问这些文件）
 
@@ -1032,12 +1032,6 @@ override fun onSaveInstanceState(outState: Bundle) {
 }
  ```
 
-### 如何将一个 Activity 设置成窗口的样式
-
-```xml
-android:theme="@android:style/Theme.Dialog
-```
-
 ### 61 Context、 Activity、Application 有什么区别？
 
 * Activity 和 Application 都是Context的子类
@@ -1045,7 +1039,7 @@ android:theme="@android:style/Theme.Dialog
 * Activity 维护一个 Acitivity 的生命周期，其对应的 Context 也只能访问该 Activity内的各种资源。
 * Application 维护一个 Application 的生命周期。
 
-### 62 Context 是 什 么 ？  一 个 应 用 有 多 少 个 Context？
+### 62 Context 是 什 么 ？  一 个 应用有多少个 Context？
 * 描述的是一个应用程序环境的信息，即上下文。
 
 * 抽象(abstract class)类，Android 提供了该抽象类的具体实现类。
@@ -1077,8 +1071,6 @@ bindService(Intent service, ServiceConnection conn, int flags)。
 * 请求处理完成后，IntentService 会自动停止，无需调用 stopSelf() 停止 Service； 
 
 ### 66 说说 Activity、Intent、Service 是什么关系？
-
-#### Activity、Intent、Service 是什么关系
 
 Activity 和 Service 都是 Android 四大组件之一。都是 Context 类的子类 **ContextWrapper** 的子类。
 
