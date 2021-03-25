@@ -29,7 +29,7 @@
   * [广播启动过程](Android/广播启动过程.md)
   * [ContentProvider启动过程](Android/ContentProvider启动过程.md)
   * [Context](Android/Context.md)
-  * [AMS](Android/AMS.md)
+  * [AMS](Android/ActivityManagerService.md)
   * [WMS](Android/WindowManagerService.md)
   * [LayoutInfater](Android/LayoutInflater.md)
   * [Binder](Android/Binder.md)
