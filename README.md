@@ -90,6 +90,7 @@
   * [CopyOnWriteArrayList解析](Java/CopyOnWriteArrayList.md)
   * [ArrayList解析](Java/ArrayList源码分析.md)
   * [LinkedList解析](Java/LinkedList源码分析.md)
+  * [PriorityQueue解析](Java/PriorityQueue源码分析.md)
   * [LinkedHashMap解析](Java/LinkedHashMap源码分析.md)
 * [Java并发](Java/Java并发.md)
 * [Java线程池](Java/Java线程池.md)
