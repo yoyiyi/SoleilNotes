@@ -33,7 +33,7 @@ EventBus.getDefault().unregister(this)
 
 EventBus 的核心就是**观察者模式**。
 
-* EventBus 相当于**被观察者**，内部存放一个**subscriptionsByEventType**（订阅方法）集合，包含所有的观察者，也就是调用了 registe r的所有 Activity 或者 Fragment 中的订阅方法。
+* EventBus 相当于**被观察者**，内部存放一个**subscriptionsByEventType**（订阅方法）集合，包含所有的观察者，也就是调用了 register 的所有 Activity 或者 Fragment 中的订阅方法。
 * 当使用 post 发送事件时，遍历 **subscriptionsByEventType**，拿到观察者，通过反射调用观察者中的事件处理方法。
 
 ## 2 原理

@@ -40,6 +40,7 @@
   * [IntentService](Android/IntentService.md)
   * [HandlerThread](Android/HandlerThread.md)
   * [Apk 打包](Android/Apk打包流程.md)
+  * [Dalvik和ART](Android/Dalvik和ART.md)
   * [Hook 技术](Android/Hook技术.md)
   * [v1、v2、v3 签名区别](Android/v1、v2、v3签名区别.md)
   * [RecyclerView](RecyclerView,md)
