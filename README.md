@@ -39,6 +39,7 @@
 * Android 进阶
   
   * [Handler解析](Android/Handler.md)
+  * [函数式编程](Android/函数式编程.md)
   * [IntentService](Android/IntentService.md)
   * [HandlerThread](Android/HandlerThread.md)
   * [Apk 打包](Android/Apk打包流程.md)
