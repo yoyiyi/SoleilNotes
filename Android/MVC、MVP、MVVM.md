@@ -30,3 +30,97 @@ MVP ：Model - View - Presenter，是 MVC 演化的版本，使用 MVP 时 View 
 MVVM：Model - View - ViewModel，本质上是 MVC 层的演化版本，与 MVP 不同是，ViewModel 跟 Model 和 View 进行**双向绑定**，View 变化，ViewModel 就会通知 Model 数据改变，同样，Model 变化，ViewModel 也会通知 View。
 
 ![](../asset/mvvm.png)
+
+缺点：
+
+* 数据绑定使得 Bug 很难被调试；
+* DataBinding 使用会生成大量的 Binding 类，可能影响编译速度；
+* 数据双向绑定不利于代码重用；
+
+
+
+
+
+```java
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+    <data>
+        <variable
+            name="person"
+            type="com.yoyiyi.test.mvvm.Person" />
+    </data>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:orientation="vertical"
+        android:layout_height="match_parent"
+        tools:context=".MainActivity">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@{person.name}" />
+
+    </LinearLayout>
+</layout>
+
+
+public class MainActivity extends AppCompatActivity {
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        ActivityMainBinding binding = DataBindingUtil.setContentView(this, R.layout.activity_main);
+        Person person = new Person("积极");
+        binding.setP(person);
+        
+    }
+ }   
+```
+
+### 3.1 基本用法
+
+```java
+//1.import 用法与别名
+    <data>
+        <import type="com.yoyiyi.test.mvvm.Person"
+            alias="p1"/>
+        <import type="com.yoyiyi.test.mvvm.alias.Person"
+            alias="p2"/>
+        
+        <variable
+            name="p1"
+            type="p1" />
+        <variable
+            name="p2"
+            type="p2" />
+    </data>
+
+//2.变量定义 java.lang.* 会被自动导入
+   <data>       
+        <variable
+            name="name"
+            type="String" />  
+    </data>
+    
+//3.Converter 转换器
+   <data>       
+        <variable
+            name="time"
+            type="java.util.Date" />  
+    </data>      
+   
+public class Utils {
+    @BindingConversion
+    public static String convertDate(Date date){
+        return new SimpleDateFormat("yyyy-MM-dd").format(date);
+    }
+
+}    
+
+//4.双向绑定 @={}
+Observable、ObservableField、集合类型 Observable 容器类
+
+```
+
