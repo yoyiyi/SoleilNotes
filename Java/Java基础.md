@@ -117,7 +117,7 @@ switch 支持 int 和枚举类型，可以用 char,byte,short,int 类型，**jdk
 
 #### 11 用最有效率的方法计算2乘以8
 
- 2 << 3
+ 2 << 3。
 
 #### 12 数组有没有 length() 方法？String 有没有 length() 方法？
 
