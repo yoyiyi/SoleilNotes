@@ -23,6 +23,7 @@ public static IActivityManager getService() {
     return IActivityManagerSingleton.get()    
 }
 
+
  private static final Singleton<IActivityManager> IActivityManagerSingleton =
             new Singleton<IActivityManager>() {
                 @Override
