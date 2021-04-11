@@ -11,7 +11,7 @@
 
 不是，是**引用类型**，Java 中的基本数据类型只有8个：byte、short、int、long、float、double、char、boolean；
 
-#### 3 float f=3.4;是否正确？
+#### 3 float f = 3.4;是否正确？
 
 不正确，3.4 是双精度数 ，将双精度型（double）赋值给浮点型（float）属于下转型会造成精度损失，float f =(float)3.4，float f =3.4F;
 
