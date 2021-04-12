@@ -440,6 +440,7 @@ private void ensureExplicitCapacity(int minCapacity) {
           grow(minCapacity);
 }
 
+
 //扩容的核心方法
 private void grow(int minCapacity) { 
        //oldCapacity 为旧容量
