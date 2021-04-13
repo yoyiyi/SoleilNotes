@@ -4,7 +4,7 @@ ConcurrentHashMap 是 Java1.5 中引用的一个**线程安全的支持高并发
 
 ![](../asset/17CM.png)
 
-如图所示：由 Segment 数组、HashEntry 组成，Segment 的个数是 16 个，源码如下所示：
+如图所示：由 Segment 数组、HashEntry 组成，Segment 的个数是 **16** 个，源码如下所示：
 
 ```java
 //Segment 数组，存放数据时首先需要定位到具体的 Segment 中。

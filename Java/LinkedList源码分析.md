@@ -20,7 +20,7 @@ LinkedList 数据结构：
 
 ```java
 private static class Node<E> {
-     E item;
+     E item; //结点值
      Node<E> next; //后驱节点
      Node<E> prev; //前驱节点
 
@@ -35,8 +35,8 @@ private static class Node<E> {
 LinkedList 两个构造函数：
 
 ```java
- public LinkedList() {
-    }
+public LinkedList() {}
+
 public LinkedList(Collection<? extends E> c) {
      this();
      addAll(c);
