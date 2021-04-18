@@ -1676,3 +1676,24 @@ Fragment 可见状态改变时会被调用setUserVisibleHint()方法，可以通
 
 
 ### 119 如何画五子棋棋谱？
+
+
+
+#### 120 自定义 view(自定义view的时候，三个构造函数各自的作用)
+
+```java
+//在java代码创建视图的时候被调用，如果是从xml填充的视图，就不会调用这个
+public RoundProgressBar(Context context) {
+        this(context, null);    
+    }
+ 
+//在xml创建但是没有指定style的时候被调用
+public RoundProgressBar(Context context, AttributeSet attrs) {
+       this(context, attrs, 0);　　
+}
+
+public RoundProgressBar(Context context, AttributeSet attrs, int defStyle) {}
+```
+
+
+
