@@ -89,7 +89,7 @@ B:onStop -> onDestroy
 
 window （实现类是 PhoneWindow ）相当于一个容器，里面盛放着很多 view，这些 view 是以树状结构组织起来的。
 
-一个 Activity 对应一个 Window，Activity 本身是没办法处理显示什么控件（view）的，是通过PhoneWindow 进行显示的。
+一个 Activity 对应一个 Window，Activity 本身是没办法处理显示什么控件（view）的，是通过 PhoneWindow 进行显示的。
 
 ### 10 如何启动其他应用的 Activity？
 
