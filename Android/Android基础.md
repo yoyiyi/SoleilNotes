@@ -1679,7 +1679,7 @@ Fragment 可见状态改变时会被调用setUserVisibleHint()方法，可以通
 
 
 
-#### 120 自定义 view(自定义view的时候，三个构造函数各自的作用)
+### 120 自定义 view(自定义view的时候，三个构造函数各自的作用)
 
 ```java
 //在java代码创建视图的时候被调用，如果是从xml填充的视图，就不会调用这个
@@ -1696,4 +1696,52 @@ public RoundProgressBar(Context context, AttributeSet attrs, int defStyle) {}
 ```
 
 
+
+### 121 Android对HashMap做了优化后推出的新的容器类是什么？
+
+SparseArray
+优点：它要比 HashMap 节省内存，某些情况下比HashMap性能更好，按照官方问答的解释，主要是因为SparseArray 不需要对 key 和 value 进行auto-boxing（将原始类型封装为对象类型，比如把int类型封装成Integer类型），结构比 HashMap 简单（SparseArray 内部主要使用两个一维数组来保存数据，一个用来存 key，一个用来存 value）不需要额外的额外的数据结构（主要是针对HashMap中的HashMapEntry而言的）。
+
+### 122 WebView 漏洞
+
+**任意代码执行漏洞**
+
+* WebView 中 `addJavascriptInterface（）` 接口:当JS拿到Android这个对象后，就可以调用这个Android对象中所有的方法，包括系统类（java.lang.Runtime 类），从而进行任意代码执行。解决：4.2 版本之后：对被调用的函数以 `@JavascriptInterface`进行注解从而避免漏洞攻击。4.2 版本之前：采用**拦截prompt（）**进行漏洞修复。
+
+* WebView 内置导出的 `searchBoxJavaBridge_`对象：在Android 3.0以下，Android系统会默认通过`searchBoxJavaBridge_`的Js接口给 WebView 添加一个JS映射对象：`searchBoxJavaBridge_`对象
+
+  该接口可能被利用，实现远程任意代码。解决：删除`searchBoxJavaBridge_`接口。
+
+* WebView 内置导出的 `accessibility` 和 `accessibilityTraversal`Object 对象：上同。
+
+**密码明文存储漏洞**
+
+```java
+WebSettings.setSavePassword(false)  //关闭密码保存提醒
+```
+
+**域控制不严格漏洞**
+
+当其他应用启动此 Activity 时， intent 中的 data 直接被当作 url 来加载（假定传进来的 url 为 file:///data/local/tmp/attack.html ），其他 APP 通过使用显式 ComponentName 或者其他类似方式就可以很轻松的启动该 WebViewActivity 并加载恶意url。
+
+```java
+//对于不需要使用 file 协议的应用，禁用 file 协议；
+// 禁用 file 协议；
+setAllowFileAccess(false); 
+setAllowFileAccessFromFileURLs(false);
+setAllowUniversalAccessFromFileURLs(false);
+
+//对于需要使用 file 协议的应用，禁止 file 协议加载 JavaScript。
+//需要使用 file 协议
+setAllowFileAccess(true); 
+setAllowFileAccessFromFileURLs(false);
+setAllowUniversalAccessFromFileURLs(false);
+
+// 禁止 file 协议加载 JavaScript
+if (url.startsWith("file://") {
+    setJavaScriptEnabled(false);
+} else {
+    setJavaScriptEnabled(true);
+}
+```
 
