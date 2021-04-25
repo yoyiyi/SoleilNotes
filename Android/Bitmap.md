@@ -192,12 +192,14 @@ private static int countSampleSize(BitmapFactory.Options options, int dstWidth, 
 #### 2.1.2.4 inScaled、inDensity、inTargetDensity
 讲解这三个字段之前我们这里有一个问题，**一张图片需要的内存是如何计算的？**，这里不多讲，详情请参考笔者另外一篇文章 [Android性能优化--图片优化](https://blog.csdn.net/qq_44947117/article/details/104140199)。
 结论就是：
+
 - 1.当图片存放在 res 资源目录，图片占用内存大小 = width * scale * height * scale * 一个像素所占内存大小 ，scale = inTargetDensity / inDensity
 - 2.当图片存放在磁盘空间，图片占用内存大小 = width * height * 一个像素所占内存大小
 
 我们知道，只有图片位于资源文件夹所对应的屏幕分辨率和正是设备屏幕分辨率不同时候 `Bitmap` 才会缩放，`isScaled` 设置成 `true` 或者不设置，动态缩放，设置为 `false`，不缩放。
 `inTargetDensity` 表示真实设备屏幕分辨率。
 `inDensity` 表示资源文件所在文件夹的屏幕所对应分辨率。
+
 ## 2.2 Bitmap 静态方法
 ```java
 /**
@@ -291,4 +293,5 @@ public boolean compress(Bitmap.CompressFormat format, int quality, OutputStream 
 public void setDensity(int density)
 //获取屏幕密度
 public int getDensity()
+    
 ```
