@@ -1775,3 +1775,21 @@ ViewHolder 缓存池，在mCachedViews中如果缓存已满的时候（默认最
 可以多个 RecyclerView 共享 RecycledViewPool
 RecyclerViewPool底层是使用了SparseArray来分开存储不同ViewType的ViewHolder集合
 
+### 126 版本适配
+
+6.0 ：动态权限
+
+7.0：FileProvider
+
+8.0：通知权限、安装 APK
+
+9.0：前台服务添加权限
+
+10.0：后台运行时访问设备位置信息需要权限
+
+11.0：用户对位置信息的控制，方法是添加了一次性权限
+
+[Android版本差异适配方案(5.0-11.0)](https://blog.csdn.net/yinhaide/article/details/103295050)
+
+
+
