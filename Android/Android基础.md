@@ -1793,3 +1793,7 @@ RecyclerViewPool底层是使用了SparseArray来分开存储不同ViewType的Vie
 
 
 
+### 127  Binder特点
+
+
+
