@@ -8,6 +8,7 @@
 public Activity execStartActivity(...){
     try {
         ..
+            
         //调用 ActivityManager#getService() 
         int result = ActivityManager.getService().startActivity(...)    
     }
