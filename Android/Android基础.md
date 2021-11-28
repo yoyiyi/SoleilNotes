@@ -49,7 +49,7 @@ B:onStop -> onDestroy
 * 后台进程：其中运行着执行 onStop 方法而停止的程序，但是却不是用户当前关心的，例如后台挂着的QQ，这时的进程系统一旦没了有内存就首先被杀死。
 * 空进程：不包含任何应用程序的进程，这样的进程系统是一般不会让他存在的。
 
-### 5 Activty 和 Fragmengt 之间怎么通信，Fragmengt 和 Fragmengt怎么通信？
+### 5 Activty 和 Fragment 之间怎么通信，Fragment 和 Fragment怎么通信？
 
 * Handler
 * 广播
