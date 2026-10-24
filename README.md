@@ -46,6 +46,7 @@
   * [LayoutInflater](Android/LayoutInflater.md)
   * [Binder 机制](Android/Binder机制.md)
   * [DataBinding](Android/DataBinding原理.md)
+  * [包管理机制和 PMS](Android/Framework/包管理机制和PMS/000.目录.md)
 * Android 进阶
   
   * [Handler解析](Android/Handler.md)
@@ -254,6 +255,8 @@
 * [知识点总结](其他/知识点总结.md)
 * [滑动窗口](其他/滑动窗口.md)
 * [面经整理](其他/面经整理.md)
+* [Gradle 笔记](Gradle/000.目录.md)
+* [JavaScript 基础](js/JavaScript基础.md)
 
 ---
 

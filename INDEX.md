@@ -2,7 +2,7 @@
 
 > 本文件由 `scripts/gen_index.py` 自动生成，请勿手工编辑；新增笔记后执行 `python scripts/gen_index.py` 更新。
 
-当前共收录 **250** 篇笔记。
+当前共收录 **239** 篇笔记。
 
 ## Android
 
@@ -12,7 +12,6 @@
 - [Android9.0非SDK接口限制](Android/Android9.0非SDK接口限制.md)
 - [Android匿名共享内存-Ashmem](Android/Android匿名共享内存-Ashmem.md)
 - [Android基础](Android/Android基础.md)
-- [Android基础temp](Android/Android基础temp.md)
 - [Android新特性](Android/Android新特性.md)
 - [Android版本适配](Android/Android版本适配.md)
 - [Android系统启动](Android/Android系统启动.md)
@@ -25,10 +24,7 @@
 - [Context](Android/Context.md)
 - [Dalvik和ART](Android/Dalvik和ART.md)
 - [DataBinding原理](Android/DataBinding原理.md)
-- [001.Android系统架构](Android/Framework/001.Android系统架构.md)
 - [001.Android系统架构](Android/Framework/001.Android系统架构/001.Android系统架构.md)
-- [ActivityManagerService](Android/Framework/ActivityManagerService.md)
-- [Context](Android/Framework/Context.md)
 - [WindowManagerService](Android/Framework/WindowManagerService.md)
 - [000.目录](Android/Framework/包管理机制和PMS/000.目录.md)
 - [001.PackageManager简介](Android/Framework/包管理机制和PMS/001.PackageManager简介.md)
@@ -38,7 +34,6 @@
 - [Hilt依赖注入](Android/Hilt依赖注入.md)
 - [Hook技术](Android/Hook技术.md)
 - [IntentService](Android/IntentService.md)
-- [JNI基础](Android/JNI基础.md)
 - [Jetpack Compose](Android/Jetpack%20Compose.md)
 - [Jetpack](Android/Jetpack.md)
 - [LayoutInflater](Android/LayoutInflater.md)
@@ -72,9 +67,6 @@
 - [10.Apk包优化](Android/性能优化/10.Apk包优化.md)
 - [11.高效的测试](Android/性能优化/11.高效的测试.md)
 - [12.发布版本优化](Android/性能优化/12.发布版本优化.md)
-- [启动优化](Android/性能优化/启动优化.md)
-- [电量优化](Android/性能优化/电量优化.md)
-- [绘制优化](Android/性能优化/绘制优化.md)
 - [换肤方案](Android/换肤方案.md)
 - [插件化](Android/插件化.md)
 - [热修复](Android/热修复.md)
@@ -102,7 +94,6 @@
 ## Flutter
 
 - [Dart语言](Flutter/Dart/Dart语言.md)
-- [Dart语言](Flutter/Dart语言.md)
 - [01.第一个Flutter应用](Flutter/Flutter实战/01.第一个Flutter应用.md)
 - [02.基础Widget](Flutter/Flutter实战/02.基础Widget.md)
 - [03.布局类组件](Flutter/Flutter实战/03.布局类组件.md)
@@ -133,7 +124,6 @@
 - [002.Gradle基础](Gradle/002.Gradle基础.md)
 - [000.目录](Gradle/part01/000.目录.md)
 - [001.Gradle 版 Hello World](Gradle/part01/001.Gradle%20版%20Hello%20World.md)
-- [001.Gradle基础](Gradle/part01/001.Gradle基础.md)
 - [002.Gradle Wrapper](Gradle/part01/002.Gradle%20Wrapper.md)
 - [003.Gradle 日志](Gradle/part01/003.Gradle%20日志.md)
 - [004.Gradle 命令行](Gradle/part01/004.Gradle%20命令行.md)
@@ -296,7 +286,6 @@
 - [012.结构型模式_外观模式](设计模式/012.结构型模式_外观模式.md)
 - [013.结构型模式_享元模式](设计模式/013.结构型模式_享元模式.md)
 - [014.结构型模式_组合模式](设计模式/014.结构型模式_组合模式.md)
-- [015.结构型模式_桥接模式](设计模式/015.结构型模式_桥接模式.md)
 - [016.行为型模式_模板模式](设计模式/016.行为型模式_模板模式.md)
 - [017.行为型模式_策略模式](设计模式/017.行为型模式_策略模式.md)
 - [018.行为型模式_命令模式](设计模式/018.行为型模式_命令模式.md)

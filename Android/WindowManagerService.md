@@ -169,6 +169,8 @@ WindowManage 对 Window 进行管理，也就是 Window 的添加、更新、删
 * WIndowManager 处理的部分
 * WMS 处理的部分
 
+> 2025 更新：Android 12 起，WMS 内部以 `WindowContainer` 树组织 Display/Task/Activity/Window，并用 `SurfaceControl`/`Transaction` 把窗口层级和缓冲区提交给 SurfaceFlinger；前文的 `Session#addToDisplay` 调用链仍可作为入门，但现代代码会经过 `DisplayContent`、`WindowState`、`BLASTBufferQueue` 等对象。
+
 ### 4.1 Window 的添加过程
 
 在 Activity 启动流程中，如果 进程不存在，会创建新进程，运行 **ActivityThread**，当界面要和用户进行交互，就会调用 Activity 的 handlerResumeActivity()，最终调用到 WindowManagerGlobal#addView。
@@ -454,3 +456,129 @@ final class ViewRootHandler extends Handler {
     }
 ```
 
+
+## 5 Android 12—16 的变化与面试追问
+
+> 2025 更新：前文以 Android 9/10 的 `Session#addToDisplay` 链路入门。Android 12 起 WMS 的窗口组织、合成路径和大屏/Insets 行为变化很大；本节按 Android 12—16（API 31—36）补充，具体实现以对应 AOSP 分支为准。
+
+### 5.1 WindowContainer 树：WMS 的“骨架”
+
+现代 WMS 不再用零散的 Window 列表描述层级，而是用 `WindowContainer` 树把“显示设备—任务—Activity—窗口”组织起来。典型路径可以理解为：
+
+`RootWindowContainer` → `DisplayContent` → `TaskDisplayArea`/`DisplayArea` → `Task`/`TaskFragment` → `ActivityRecord` → `WindowState`；`WindowToken` 作为窗口令牌参与挂载，`WindowState` 是真正承载 `SurfaceControl` 的叶子节点之一。
+
+* `RootWindowContainer` 管理所有 Display，`DisplayContent` 管理一块屏幕上的 DisplayArea 和窗口策略。
+* `Task`/`TaskFragment` 既服务于 Activity 任务，也服务于分屏、`ActivityEmbedding` 和桌面窗口；`ActivityRecord` 不再直接散落在 `ActivityStack` 里。
+* 每个 `WindowContainer` 都可能对应一个 `SurfaceControl`，对位置、层级、透明度、裁剪的修改通过 `SurfaceControl.Transaction` 批量提交，避免逐条 IPC。
+* WMS 通过 `WindowOrganizer`/`TaskOrganizer` 与 SystemUI 的 WM Shell 协作；分屏、桌面窗口、过渡动画很多逻辑在 Shell，而不是全塞在 WMS。
+
+这也解释了为什么“Window 的添加”不再是简单的 `addWindow`：`ViewRootImpl` 通过 `IWindowSession` 请求 WMS 创建 `WindowState`/`SurfaceControl`，WMS 把 `WindowState` 挂到对应的 `WindowToken`/Task 上，再由 `SurfaceFlinger` 合成。
+
+`WindowState` 还承载了窗口策略：`LayoutParams`、`WindowToken`、`Session`、输入通道、焦点/触摸区域、Insets 状态和动画 leash。WMS 在 `DisplayContent` 上做布局（`performLayoutLockedInner` 一类流程），把计算后的 frame 写进 `WindowState`，再通过 `SurfaceControl.Transaction` 一次性提交；这比在每个 Window 上单独 set 位置更利于多窗口和过渡动画的一致性。
+
+### 5.2 多窗口、分屏、自由窗口与 Android 16 大屏
+
+* Android 7 引入分屏，Android 8 引入自由窗口（freeform），但早期更多是“能跑”；Android 12L 开始针对大屏做任务栏、分屏和兼容性适配。
+* Android 12/13 起，`ActivityEmbedding`（`androidx.window.embedding`）让应用把两个 Activity 嵌入同一任务的分栏中，`SplitPairRule`、`SplitPlaceholderRule` 是应用侧常见入口；底层依赖 `TaskFragment` 和 WM Shell。
+* Android 14/15 继续完善多窗口与桌面窗口（desktop windowing）：自由窗口可以像桌面系统一样移动、缩放，`Activity.isInMultiWindowMode()`、`onMultiWindowModeChanged()`、`Configuration` 变化成为必须处理的路径。
+* Android 15 起大屏/桌面模式更普遍；Android 16 对 target 36 且 `smallestScreenWidthDp >= 600` 的设备，系统会忽略 `android:screenOrientation`、`android:resizeableActivity=false`、`minAspectRatio`/`maxAspectRatio` 等限制（官方列出的例外除外），应用必须能适配任意方向和尺寸。
+* 适配大屏不要只靠 `android:configChanges` 硬扛；应使用 `WindowSizeClass`、`SlidingPaneLayout`、`NavRail`/`List-Detail` 等自适应布局，并在 `onConfigurationChanged()` 中正确重建/恢复状态。
+* 分屏/自由窗口下，`Activity` 可能处于 `RESUMED` 但不可见，或与其他 Activity 同时 `RESUMED`；不要把“onResume 就等于用户正在看”当成绝对前提。
+* 多窗口下的生命周期要按 `onTopResumedActivityChanged()`、`onMultiWindowModeChanged()` 和 `Configuration` 综合判断；只监听 `onResume/onPause` 很容易在分屏拖拽、窗口失焦时判断错。
+* `ActivityEmbedding` 不是简单的 `Fragment` 分栏：它由系统 TaskFragment/Shell 参与，Activity 仍按独立生命周期运行；测试时要覆盖分栏比例变化、占位页、跨应用跳转和返回栈。
+
+### 5.3 edge-to-edge 强制与 WindowInsets
+
+Android 15（target 35）开始，非浮动窗口默认 edge-to-edge：状态栏/导航栏透明，应用内容绘制到系统栏后面；Android 16（target 36）进一步移除临时 opt-out，edge-to-edge 成为硬要求。
+
+* Android 15 可以用主题属性 `android:windowOptOutEdgeToEdgeEnforcement` 临时退出，但这只是过渡；target 36 不要再依赖。
+* `Window#setDecorFitsSystemWindows(false)` 让 DecorView 不再自动为系统栏留空间；`WindowCompat.setDecorFitsSystemWindows(window, false)` 是兼容写法。
+* 现代做法是 `enableEdgeToEdge()`（AndroidX Activity）+ `WindowInsets` 监听：给根 View 加 padding/margin，而不是写死状态栏高度。
+* 常用 Insets 类型：`WindowInsets.Type.systemBars()`、`displayCutout()`、`ime()`、`tappableElement()`、`systemGestures()`、`mandatorySystemGestures()`；不要只处理状态栏而漏掉手势导航条、横屏挖孔和 IME。
+* `WindowInsetsCompat`/`ViewCompat.setOnApplyWindowInsetsListener` 处理 API 差异；`WindowInsetsControllerCompat` 控制状态栏图标明暗和系统栏显隐。
+* `Window.setStatusBarColor()`/`setNavigationBarColor()` 在 target 35 上基本失效，改颜色应通过 `SystemBarStyle` 或让内容延伸到系统栏后面。
+* 边到边之后，列表/滚动容器要处理 `clipToPadding=false`、底部按钮避让 IME、`FitsSystemWindows` 与 `consumed` 的传播，否则很容易出现“最后一项被导航条盖住”。
+* Insets 监听要返回新的 `WindowInsetsCompat` 或明确 `consumeSystemBars()`，避免父 View 消费后子 View 拿不到；`WindowInsetsAnimationCompat` 适合做 IME 跟手动画，但不要在里面做重布局。
+* 沉浸式/全屏场景要区分“隐藏系统栏”和“内容延伸到系统栏后面”：前者用 `WindowInsetsControllerCompat.hide()`，后者才是 edge-to-edge；两者混用会出现返回后布局跳动。
+
+```kotlin
+// AppCompatActivity / ComponentActivity
+enableEdgeToEdge(
+    statusBarStyle = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT),
+    navigationBarStyle = SystemBarStyle.auto(lightScrim, darkScrim)
+)
+
+ViewCompat.setOnApplyWindowInsetsListener(root) { view, insets ->
+    val bars = insets.getInsets(
+        WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
+    )
+    view.setPadding(bars.left, bars.top, bars.right, bars.bottom)
+    insets
+}
+```
+
+### 5.4 预测性返回与 WMS/Shell 的配合
+
+预测性返回（predictive back）不是简单的“返回动画”，而是把手势进度提前交给应用/系统：用户手指拖动时就开始预览返回目标，松手才真正提交，取消则回弹。
+
+* Android 13 起可以 opt-in：manifest 的 `android:enableOnBackInvokedCallback="true"`，用 `OnBackInvokedDispatcher.registerOnBackInvokedCallback()` 替代/补齐 `onBackPressed()`。
+* Android 14 增加 `OnBackAnimationCallback`/`BackEventCompat`，应用可以拿到手指进度、滑动距离，做自定义预览动画。
+* Android 15/16 逐步默认启用；Android 16 target 36 起，系统默认走预测性返回，旧的 `onBackPressed()`、`onKeyDown(KEYCODE_BACK)` 路径不再可靠，必须迁移到 `OnBackInvokedCallback`（AndroidX 可用 `OnBackPressedDispatcher`）。
+* WMS 侧由 `BackNavigationController` 之类的协调者与 WM Shell、InputDispatcher 配合：边缘手势先进入系统手势区，Shell 驱动预览动画，提交时才回调应用的 `OnBackInvokedCallback`；取消时应用不应收到“已返回”。
+* 三键导航和手势导航的行为不同；测试时两种导航模式都要覆盖，尤其是全屏、沉浸式、输入法弹出和多窗口场景。
+
+### 5.5 高刷新率、FrameRate 与 SurfaceControl/SurfaceFlinger
+
+高刷新率适配的核心不是“申请 120Hz”，而是把“内容适合多少帧”告诉系统，让 SF/HWC 在流畅和功耗之间决策。
+
+* 读取屏幕能力：`Display.getSupportedModes()`、`Display.Mode.getRefreshRate()`；请求模式可用 `WindowManager.LayoutParams.preferredDisplayModeId`，旧的 `preferredRefreshRate` 优先级较低。
+* 应用侧声明帧率：`Surface.setFrameRate(frameRate, compatibility)`（API 30）用于媒体/游戏等有明确帧率的场景；Android 15 起可用 `View.setRequestedFrameRate()` 给 View 层级提请求。不要把所有页面硬编码成 120Hz。
+* `Choreographer` 按 VSync 调度，`FrameTimeline` 能区分 App/UI 线程与 SF 的耗时；掉帧要判断是主线程、RenderThread 还是合成阶段的问题。
+* `SurfaceControl` 是应用窗口在 SurfaceFlinger 中的“图层句柄”，`Surface` 是生产端；Android 12 起应用窗口逐步走 `BLASTBufferQueue`，把 buffer 提交和 `SurfaceControl.Transaction` 解耦。
+* `SurfaceControl.Transaction` 可以批量设置位置、矩阵、透明度、层级、裁剪、frame rate，最后 `apply()` 原子提交；WMS 用它移动/缩放窗口，避免一改一刷。
+* `BLASTBufferQueue` 把 App 的 buffer 生产与 SF 的 transaction 同步起来：`ViewRootImpl` 不再各自维护一条老式 BufferQueue，`SurfaceView` 等场景也逐步切到 BLAST；排查合成问题时要知道“buffer 什么时候进 SF”与“transaction 什么时候 apply”是两条时间线。
+* SurfaceFlinger 负责把各层合成：优先走 HWC 硬件合成，不合适时回退 GPU；合成前按 Z 序、透明度、脏区处理。`BufferQueue` 常见 triple buffering（3 个 buffer），能减少生产/消费抖动，但会增加一帧左右延迟，具体 buffer 数由图形栈决定。
+* AOSP 的 RenderEngine 支持 GL/Vulkan 后端，部分版本/设备会启用 Vulkan 合成路径；它不是“用了 Vulkan 就一定更快”，而是降低 CPU 驱动开销、统一 GPU 路径，仍需看 HWC 能力和功耗。
+* 高刷适配还要看 `FrameTimeline` 的 App/SF 时间线：App 在 120Hz 下每帧只有约 8.3ms，任何主线程抖动都会被放大；不要只盯着 `Choreographer` 的 doFrame 日志，要同时看 RenderThread 和 SF 的合成耗时。
+
+```kotlin
+val transaction = SurfaceControl.Transaction()
+transaction.setPosition(surfaceControl, x, y)
+    .setAlpha(surfaceControl, 0.8f)
+    .setLayer(surfaceControl, 1)
+    .apply()
+```
+
+### 5.6 面试追问
+
+**Q1：WindowContainer 树解决了什么问题？**
+
+它把 Display、Task、Activity、Window 组织成可递归操作的容器树，让 WMS 能统一处理层级、裁剪、变换、可见性和 SurfaceControl；分屏、自由窗口、ActivityEmbedding、过渡动画都可以在树上做，而不是为每种窗口形态写一套特殊逻辑。`WindowState` 只是叶子，真正的“窗口关系”在容器树里。
+
+**Q2：Android 16 为什么忽略方向/resizable 限制？**
+
+大屏和桌面模式下，用户期望窗口可以自由缩放、旋转，应用不应该用 `screenOrientation` 把手机布局锁死。Android 16 对 target 36 的大屏设备强制忽略这些限制，倒逼应用使用自适应布局、`WindowSizeClass` 和处理 `Configuration` 变化。例外场景以官方文档为准，但不要把“游戏/相机”当万能借口。
+
+**Q3：edge-to-edge 怎么适配？**
+
+先 `enableEdgeToEdge()` 或 `setDecorFitsSystemWindows(false)`，再用 `WindowInsetsCompat` 给根 View 分配系统栏、挖孔、IME 的 padding；状态栏图标明暗用 `WindowInsetsControllerCompat`。不要写死 24dp/48dp，也不要只处理竖屏状态栏。Android 15 的 opt-out 只是过渡，target 36 必须真正适配。
+
+**Q4：预测性返回中 WMS 做了什么？**
+
+WMS/Shell 负责识别边缘手势、驱动返回预览动画、维护返回目标栈；输入事件先给系统手势，提交时才通过 `OnBackInvokedCallback` 通知应用，取消则回弹。应用要做的是注册回调、处理进度，并确保 `onBackPressed()` 不再承担唯一返回逻辑。
+
+**Q5：高刷为什么不能写死 120Hz？**
+
+因为屏幕可能支持 60/90/120/144Hz 多模式，系统还要考虑 LTPO、功耗、发热和内容帧率。应用应通过 `Display.Mode`/`preferredDisplayModeId` 选择合适模式，通过 `Surface.setFrameRate()`/`View.setRequestedFrameRate()` 声明内容帧率，让 SF/HWC 决策；硬编码高刷会带来耗电和兼容性问题。
+
+**Q6：Surface、SurfaceControl、SurfaceFlinger 是什么关系？**
+
+`Surface` 是应用的生产端，往里 `dequeueBuffer`/`queueBuffer`；`SurfaceControl` 是 WMS/SF 侧的图层句柄，描述位置、层级、变换；`SurfaceFlinger` 是合成服务，按 VSync 把各层合成后交给 HWC/Display。应用通过 Binder 让 WMS 创建/操作 SurfaceControl，真正的 buffer 流转走 BufferQueue/BLAST。
+
+**Q7：Triple Buffering 的利弊？**
+
+3 个 buffer 让生产端在消费端占用一个 buffer 时仍有回旋空间，减少因 VSync 抖动导致的 jank；代价是排队延迟增加，触摸到显示的延迟可能变大。是否启用、buffer 数多少由 BufferQueue、SF 策略和设备决定，不能简单说“越多越流畅”。
+
+**Q8：Vulkan 在 SurfaceFlinger 里解决什么？**
+
+它提供一条更统一的 GPU 合成路径，减少 GL 驱动开销和 CPU 提交成本，并便于利用现代 GPU 特性；但合成通常优先走 HWC，Vulkan 主要影响 GPU fallback/RenderEngine 路径。是否默认启用取决于 Android 版本、GPU 厂商和设备配置，面试时不要把它说成“Android 16 全面 Vulkan 化”。
