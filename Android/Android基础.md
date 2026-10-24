@@ -1,3 +1,5 @@
+> **时效提示**：本文主体写于 2019 年前后，部分 API（AsyncTask、Support 库、findViewById 等）已过时。文中涉及处已加「⚠️ 已过时」标注，替代方案见文末「现代 Android 补充（2020—2025）」。
+
 ### 1 Activity 生命周期 
 
 * onCreate()：正在被创建，常用来**初始化工作**，比如调用 setContentView 加载界面布局资源，初始化 Activity 所需数据等；
@@ -123,6 +125,8 @@ window （实现类是 PhoneWindow ）相当于一个容器，里面盛放着很
 * onCreate 和 onResume 回调中尽量避免耗时的代码
 
 ### 12 AsyncTask 的缺陷和问题，说说他的原理？
+
+> ⚠️ 已过时：AsyncTask 在 Android 11（API 30）已被标记废弃（deprecated），新代码不要再使用，应改用 Kotlin 协程 + `viewModelScope`/`lifecycleScope`（需要保证执行完成的用 WorkManager）。替代方案见文末「现代 Android 补充」。
 
 AsyncTask 是一种**轻量级的异步任务类**，可以在线程池中执行后台任务，然后把执行的进度和最终结果传递给主线程并主线程中更新 UI，通过 AsyncTask 可以更加方便执行后台任务以及在主线程中访问 UI，但是 AsyncTask 并不适合进行特别耗时的后台任务，对于特别耗时的任务来说，建议使用线程池。
 
@@ -280,6 +284,8 @@ intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 ```
 
 ### 20 怎么在Service中创建Dialog对话框？
+
+> ⚠️ 已过时：`TYPE_SYSTEM_ALERT` 在 Android 8.0（API 26）已废弃，替代为 `TYPE_APPLICATION_OVERLAY`（仍需 `SYSTEM_ALERT_WINDOW` 悬浮窗权限）；从 Service 直接弹 Dialog 的产品做法也已被通知/前台服务取代。替代方案见文末「现代 Android 补充」。
 
 ```java
 //设置类型
@@ -789,6 +795,8 @@ cursor.close()
 
 ### 43 Fragment懒加载
 
+> ⚠️ 已过时：Support 库（`android.support.*`）2018 年后已停止维护，统一迁移到 AndroidX（`androidx.*`）；`setUserVisibleHint()` 同样已废弃，现代做法是 ViewPager2 + `FragmentStateAdapter` 或 `setMaxLifecycle`。替代方案见文末「现代 Android 补充」。
+
 * support 版本中利用 setUserVisibleHint 和  onHiddenChanged
 
 ```java
@@ -993,6 +1001,8 @@ android {
 
 ### 55 ddms 和 traceView 的区别？
 
+> ⚠️ 已过时：把 trace 文件直接写到 `/mnt/sdcard/` 属于拼外部存储路径的旧写法，Android 10（API 29）分区存储后不再可用，应改用应用专属目录（`getExternalFilesDir()`/`getCacheDir()`）或 SAF；DDMS/Traceview 也已被 Android Studio Profiler 取代。替代方案见文末「现代 Android 补充」。
+
 ddms：davik debug monitor service。简单的说 ddms 是一个**程序执行查看器**，在里面可以看见线程和堆栈等信息。
 
 traceView： 程序性能分析器。traceview 是 ddms 中的一部分内容。
@@ -1067,6 +1077,8 @@ bindService(Intent service, ServiceConnection conn, int flags)。
 
 ### 65 简单说一下 IntentService
 
+> ⚠️ 已过时：IntentService 在 Android 11（API 30）已被标记废弃；替代方案是 WorkManager（可延迟、需保证完成的任务）或前台服务 + 协程（需立即执行的长任务）。替代方案见文末「现代 Android 补充」。
+
 * IntentService 是 Service 的子类，创建独立的 **worker 线程**来处理所有的 Intent 请求；
 * 请求处理完成后，IntentService 会自动停止，无需调用 stopSelf() 停止 Service； 
 
@@ -1128,6 +1140,8 @@ android:theme="@android:style/Theme.Dialog"
 
 ### 77 IntentService
 
+> ⚠️ 已过时：IntentService 已废弃（API 30），「Service + HandlerThread」的串行队列需求改由 WorkManager 的 `enqueueUniqueWork` 或协程 + 前台服务实现。替代方案见文末「现代 Android 补充」。
+
 其实就是 Service + HandlerThread。
 
 * IntentService是继承自 Service 并处理异步请求的一个类，在 IntentService 内有一个工作线程来处理耗时操作。
@@ -1151,10 +1165,14 @@ Android中的 Scheme 是一种**页面跳转协议**，和网站通过URL的形�
 
 ### 80 如何导入外部数据库
 
+> ⚠️ 已过时：硬编码 `/data/data/<包名>/` 绝对路径属于拼路径的旧写法，现代写法用 `context.getDatabasePath(name)`（Room 内部已处理）；若数据库来自外部存储或要导出，Android 10+ 需走 SAF（`ACTION_OPEN_DOCUMENT`/`ACTION_CREATE_DOCUMENT`）而不是拼路径。替代方案见文末「现代 Android 补充」。
+
 * 把原数据库放到 res/raw
 * 把数据库复制到 /data/data/com.（package name）/ 目录下
 
 ### 81 如何保证Service不被杀死？
+
+> ⚠️ 已过时：`startForeground()` 必须携带通知，而 Android 8.0（API 26）起通知必须归属 `NotificationChannel`（不建渠道通知不会展示）；Android 14（API 34）起还必须在清单声明 `android:foregroundServiceType` 并申请对应 `FOREGROUND_SERVICE_*` 权限。替代方案见文末「现代 Android 补充」。
 
 - 利用onStartCommand方法中，返回START_STICKY
 - 提高优先级：android:priority="1000"
@@ -1343,6 +1361,8 @@ protected int getExtraLayoutSpace(RecyclerView.Statestate){
 [RecyclerView 性能优化](https://www.jianshu.com/p/1853ff1e8de6)
 
 ### 94 ListView 与 RecyclerView 简单对比?
+
+> ⚠️ 已过时：「ViewHolder 避免每次 createView 时调用 findViewById」的思路仍然成立，但 `findViewById` 本身已被 ViewBinding（编译期生成绑定类，空安全、无反射）取代，新 UI 直接用 Jetpack Compose。替代方案见文末「现代 Android 补充」。
 
 **缓存区别：**
 
@@ -1777,6 +1797,8 @@ RecyclerViewPool底层是使用了SparseArray来分开存储不同ViewType的Vie
 
 ### 126 版本适配
 
+> ⚠️ 已过时：本清单只写到 Android 11，Android 12—16 的行为变更（通知权限、部分照片、精确闹钟、edge-to-edge、16 KB 页大小、前台服务超时）见 [Android版本适配](Android版本适配.md) 与文末「现代 Android 补充」。
+
 6.0 ：动态权限
 
 7.0：FileProvider
@@ -1803,5 +1825,334 @@ RecyclerViewPool底层是使用了SparseArray来分开存储不同ViewType的Vie
 
 ### 129 说说 Kotlin 中的内联函数？
 
+## 130 现代 Android 补充（2020—2025）
 
+> 本节只写 2019 年之后成为主流的写法：AGP 8.x + Kotlin 2.x + Compose BOM，targetSdk 35/36。每节是「面试可答的要点 + 精简代码」，逐版本的行为变更见 [Android版本适配](Android版本适配.md)。
 
+### 130.1 ViewBinding 与 DataBinding 的选择
+
+| 方案 | 解决什么 | 代价 |
+| --- | --- | --- |
+| `findViewById` | 按 id 拿 View | 手写、空指针、id 写错只在运行时暴露 |
+| ViewBinding | 编译期生成 `XxxBinding`，类型安全、空安全 | 只负责「找 View」，不做数据绑定 |
+| DataBinding | XML 表达式、双向绑定、绑定生命周期 | 布局要 `<layout>` 包裹，编译慢、可读性差 |
+
+* 开关：`buildFeatures { viewBinding = true }`。`fragment_main.xml` 生成 `FragmentMainBinding`；`merge` 布局的绑定类没有 `root`，`inflate(inflater, parent)` 必须传 parent；`include` 的布局是嵌套属性（`binding.header.title`）。
+* 没有反射、没有运行时开销；也不同于已废弃的 `kotlin-android-extensions`（后者靠合成属性，不显式、不安全）。
+* Fragment 必须用可空 `_binding` 并在 `onDestroyView()` 置空，否则 View 比 Fragment 活得久会泄漏。
+
+```kotlin
+class MainFragment : Fragment(R.layout.fragment_main) {
+    private var _binding: FragmentMainBinding? = null
+    private val binding get() = _binding!!
+
+    override fun onCreateView(
+        inflater: LayoutInflater, container: ViewGroup?, state: Bundle?
+    ): View = FragmentMainBinding.inflate(inflater, container, false).also { _binding = it }.root
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        binding.title.text = "现代 Android"
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
+    }
+}
+```
+
+* DataBinding 只在需要 `binding.lifecycleOwner = viewLifecycleOwner` 自动订阅、大量 `@{}` 表达式或双向绑定时才值得用。
+* **结论**：默认 ViewBinding；确有布局内绑定才 DataBinding；新项目直接 Compose。
+
+### 130.2 Jetpack Compose 入门要点
+
+* Compose 不改变窗口体系：Activity/Window 还在，内容由一个 `AndroidComposeView`（View 的子类）承载，最终仍走 Canvas 绘制与硬件加速。
+* 互操作：View 页面里用 `setContent {}` 或 `ComposeView` 放 Compose；Compose 里用 `AndroidView`/`AndroidViewBinding` 包 View。
+* 四个核心概念：**重组**（状态变化只重跑受影响的 composable）、**状态**（`mutableStateOf` + `remember`/`rememberSaveable`）、**副作用**（`LaunchedEffect`/`DisposableEffect`）、**状态提升**（状态上提到调用方，子组件只收值 + 回调）。
+* 列表必须给 `key`，否则重组或删除时会错位；派生状态用 `derivedStateOf` 减少无效重组。
+
+```kotlin
+@Composable
+fun CounterScreen(vm: CounterViewModel = viewModel()) {
+    val count by vm.count.collectAsStateWithLifecycle()
+    var input by rememberSaveable { mutableStateOf("") }
+
+    Column(Modifier.padding(16.dp)) {
+        Text("点击 $count 次")
+        Button(onClick = vm::increment) { Text("+1") }
+        TextField(value = input, onValueChange = { input = it })
+    }
+}
+
+LazyColumn {
+    items(users, key = { it.id }) { user -> UserRow(user) }
+}
+```
+
+* **何时选 Compose**：新项目/新页面、状态驱动强或变化频繁的 UI、需要响应式布局（配合 `WindowSizeClass`）；老项目按页面灰度迁移，View 与 Compose 可长期共存。
+* 代价：包体变大、首次编译变慢、团队要重新建立「状态 + 副作用」的心智模型。
+* **面试要点**：Compose 快在「重组范围由状态读取自动推导」（细粒度失效）加 slot table 记录组合结构；它没有 ViewHolder 池，靠 skip 跳过未变化的 composable。
+
+### 130.3 协程在 Android 中的标准用法
+
+| AsyncTask | 协程写法 |
+| --- | --- |
+| `onPreExecute()` | `launch` 的第一行（默认主线程） |
+| `doInBackground()` | `withContext(Dispatchers.IO) { }` |
+| `onProgressUpdate()` | `MutableStateFlow` / `callbackFlow` |
+| `onPostExecute()` | `withContext` 返回后继续写（自动回主线程） |
+| `cancel()` | `job.cancel()`，协程在每个挂起点检查取消 |
+
+* **两个作用域**：`viewModelScope`（`onCleared()` 自动取消，数据要比 View 活得久）、`lifecycleScope` + `repeatOnLifecycle(STARTED)`（页面不可见时停止收集，回前台自动恢复）。收集 Flow **必须**用 `repeatOnLifecycle`，禁止 `GlobalScope`。
+* 结构化并发：父协程取消会取消子协程；`launch` 里一个子任务抛异常会取消兄弟协程（`SupervisorJob` 可隔离），`async` 的异常在 `await()` 处抛。
+* `viewModelScope` 默认 `Dispatchers.Main.immediate`；CPU/IO 用 `withContext(Dispatchers.IO)`，Flow 上游用 `flowOn`。
+
+```kotlin
+class FeedViewModel(private val repo: FeedRepository) : ViewModel() {
+    private val _state = MutableStateFlow<UiState>(UiState.Loading)
+    val state: StateFlow<UiState> = _state.asStateFlow()
+
+    fun refresh() = viewModelScope.launch {
+        _state.value = UiState.Loading
+        _state.value = try {
+            UiState.Success(withContext(Dispatchers.IO) { repo.load() })
+        } catch (e: IOException) {
+            UiState.Error(e.message ?: "网络错误")
+        }
+    }
+}
+
+// Activity/Fragment：STARTED 才收集，STOPPED 自动取消
+viewLifecycleOwner.lifecycleScope.launch {
+    viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+        vm.state.collect { render(it) }
+    }
+}
+// Compose 等价写法：val state by vm.state.collectAsStateWithLifecycle()
+```
+
+* 常见追问：「协程是轻量级线程吗？」——不是线程，而是可挂起的用户态任务，调度仍跑在线程池上，挂起不阻塞线程。
+
+### 130.4 权限适配（13 通知、14 部分照片、14 精确闹钟）
+
+* **13（API 33）`POST_NOTIFICATIONS`**：新增的运行时权限，不申请就发通知用户看不到（被静默丢弃），前台服务通知同样受影响。时机是用户触发「订阅 / 开启提醒」时再问，被拒后降级为应用内提示并提供跳设置入口。
+
+```kotlin
+private val askNotif = registerForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
+    if (ok) showNotification() else showInAppBanner("通知已关闭")
+}
+
+fun ensureNotificationPermission() {
+    val need = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+        ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) !=
+        PackageManager.PERMISSION_GRANTED
+    if (need) askNotif.launch(Manifest.permission.POST_NOTIFICATIONS) else showNotification()
+}
+```
+
+* **14（API 34）部分照片访问**：13 用 `READ_MEDIA_IMAGES/VIDEO/AUDIO` 取代 `READ_EXTERNAL_STORAGE`；14 允许用户只授权「选中的照片」（`READ_MEDIA_VISUAL_USER_SELECTED`，临时授权），必须支持「重新选择」，不能假设能遍历整个相册。选头像、发图这类场景直接用 Photo Picker，**完全不需要权限**。
+
+```kotlin
+private val pickImage = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri: Uri? ->
+    uri?.let(::previewAvatar)
+}
+fun chooseAvatar() = pickImage.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+```
+
+* **12 / 14 精确闹钟**：12 起 `SCHEDULE_EXACT_ALARM` 是特殊权限，14 起新装应用默认不授予；只有闹钟/日历类应用可用 `USE_EXACT_ALARM`（上架需声明用途）。先 `canScheduleExactAlarms()`，不满足就降级 `setWindow()`/`setAndAllowWhileIdle()` 或改用 `WorkManager`；「定时刷新」这类可延迟任务不该用精确闹钟。
+
+```kotlin
+val am = getSystemService(AlarmManager::class.java)
+if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !am.canScheduleExactAlarms()) {
+    startActivity(Intent(AlarmManager.ACTION_REQUEST_SCHEDULE_EXACT_ALARM, "package:$packageName".toUri()))
+} else {
+    am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent)
+}
+```
+
+### 130.5 存储适配（分区存储、MediaStore、SAF、DataStore）
+
+* 分区存储：10（API 29）引入、11（API 30）强制，应用默认只能访问自己的目录和系统选择器返回的文件；`requestLegacyExternalStorage` 只在 targetSdk ≤ 29 生效，`WRITE_EXTERNAL_STORAGE` 对普通应用已无实际作用。
+* 自己的目录不需要权限、卸载即清理：内部 `filesDir`/`cacheDir`，外部私有 `getExternalFilesDir(Environment.DIRECTORY_PICTURES)`/`getExternalCacheDir()`；不要再拼 `/sdcard/...`。
+* 共享媒体：写自己创建的图片/视频用 `MediaStore` + `IS_PENDING`，无需权限；读别人创建的媒体用 13 的 `READ_MEDIA_IMAGES` 或 Photo Picker；`MANAGE_EXTERNAL_STORAGE` 只留给文件管理器类应用。
+* SAF：`ACTION_OPEN_DOCUMENT`/`ACTION_OPEN_DOCUMENT_TREE`/`ACTION_CREATE_DOCUMENT` 返回 `content://` URI，长期访问要 `takePersistableUriPermission`；适合导出、备份、让用户自选目录。
+
+```kotlin
+val values = ContentValues().apply {
+    put(MediaStore.Images.Media.DISPLAY_NAME, "IMG_${System.currentTimeMillis()}.jpg")
+    put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+    put(MediaStore.Images.Media.RELATIVE_PATH, "${Environment.DIRECTORY_PICTURES}/SoleilNotes")
+    put(MediaStore.Images.Media.IS_PENDING, 1)
+}
+val uri = contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)!!
+contentResolver.openOutputStream(uri)!!.use { bitmap.compress(Bitmap.CompressFormat.JPEG, 90, it) }
+values.clear()
+values.put(MediaStore.Images.Media.IS_PENDING, 0) // 写完置 0，其它应用才可见
+contentResolver.update(uri, values, null, null)
+```
+
+* **DataStore 取代 SharedPreferences**：异步（挂起 + Flow）、事务性、读文件不阻塞主线程；配置项用 Preferences DataStore，结构化对象用 Proto DataStore。
+
+```kotlin
+private val Context.dataStore by preferencesDataStore("settings")
+private val DARK = booleanPreferencesKey("dark")
+
+class SettingsRepo(private val context: Context) {
+    val dark: Flow<Boolean> = context.dataStore.data.map { it[DARK] ?: false }
+    suspend fun setDark(value: Boolean) = context.dataStore.edit { it[DARK] = value }
+}
+```
+
+### 130.6 后台任务（WorkManager、前台服务类型、JobScheduler）
+
+* 选型：**可延迟、必须完成** → WorkManager；**用户可感知的即时长任务**（导航、播放、录音）→ 前台服务；**系统级低功耗调度** → JobScheduler（WorkManager 在 23+ 内部就用它，更早用 AlarmManager + 广播）。
+* WorkManager：约束（网络、充电）、指数退避、`enqueueUniqueWork` 去重、进程被杀/重启后仍会执行；`PeriodicWorkRequest` 最小间隔 15 分钟；用 `CoroutineWorker` 直接写挂起函数。
+* 前台服务：8.0 起后台 `startService` 受限；12 起**不允许从后台启动前台服务**（`ForegroundServiceStartNotAllowedException`）；14 起必须声明 `foregroundServiceType` + 对应 `FOREGROUND_SERVICE_*` 权限；15 起 `dataSync` 类型 24 小时内累计最多 6 小时，超时回调 `onTimeout()`。
+
+```kotlin
+class UploadWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx, params) {
+    override suspend fun doWork(): Result = try {
+        uploader.upload(inputData.getString("path")!!)
+        Result.success()
+    } catch (e: IOException) {
+        Result.retry()
+    }
+}
+
+val request = OneTimeWorkRequestBuilder<UploadWorker>()
+    .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
+    .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
+    .build()
+WorkManager.getInstance(context).enqueueUniqueWork("upload", ExistingWorkPolicy.KEEP, request)
+```
+
+```kotlin
+// 8.0+：先建渠道再发通知，startForeground 必须带通知
+val channel = NotificationChannel("download", "下载", NotificationManager.IMPORTANCE_LOW)
+getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
+startForeground(1, NotificationCompat.Builder(this, "download").setSmallIcon(R.drawable.ic_dl).build())
+```
+
+* 清单里 14 起类型必填：`<service android:name=".DownloadService" android:foregroundServiceType="dataSync" android:exported="false" />`，同时申请 `FOREGROUND_SERVICE` 与 `FOREGROUND_SERVICE_DATA_SYNC`。
+
+### 130.7 RecyclerView 现代用法
+
+* **ListAdapter + DiffUtil**：`submitList()` 自动算差异并局部刷新，不要再 `notifyDataSetChanged()`；`areItemsTheSame` 比 id，`areContentsTheSame` 比内容，复杂 item 可重写 `getChangePayload` 只刷变化字段。
+* **ConcatAdapter**：header/footer/分组拆成多个 Adapter 拼接，`recyclerView.adapter = ConcatAdapter(headerAdapter, listAdapter)`；注意各 Adapter 的 `hasStableIds` 必须一致，否则构造时抛异常。
+* **Paging 3**：`PagingSource` 定义分页，`PagingDataAdapter` + `submitData(lifecycle, flow)` 消费；网络 + 本地库用 `RemoteMediator`；`cachedIn(viewModelScope)` 防重复请求。
+* ViewHolder 里用 ViewBinding 取控件；`setHasFixedSize(true)`、复用监听器、`setItemViewCacheSize()` 这些老优化仍然有效。
+
+```kotlin
+class UserAdapter(private val onClick: (User) -> Unit) :
+    ListAdapter<User, UserAdapter.VH>(Diff) {
+
+    object Diff : DiffUtil.ItemCallback<User>() {
+        override fun areItemsTheSame(a: User, b: User) = a.id == b.id
+        override fun areContentsTheSame(a: User, b: User) = a == b
+    }
+
+    class VH(val binding: ItemUserBinding) : RecyclerView.ViewHolder(binding.root)
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
+        val binding = ItemUserBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        return VH(binding).apply {
+            binding.root.setOnClickListener {          // 监听器只创建一次，别在 bind 里 new
+                val pos = bindingAdapterPosition
+                if (pos != RecyclerView.NO_POSITION) onClick(getItem(pos))
+            }
+        }
+    }
+
+    override fun onBindViewHolder(holder: VH, position: Int) {
+        holder.binding.name.text = getItem(position).name
+    }
+}
+
+// Paging 3
+val pager = Pager(PagingConfig(pageSize = 20)) { UserPagingSource(api) }
+    .flow.cachedIn(viewModelScope)
+adapter.submitData(lifecycle, pager)
+```
+
+### 130.8 图片加载（Glide 与 Coil 的取舍）
+
+* **Glide**：生态成熟，GIF/视频首帧、生命周期感知、丰富的 Transformation，Java 老代码多；包体与方法数偏大，配置 API 偏啰嗦。
+* **Coil**：Kotlin 优先、基于协程和 OkHttp、包体小，`AsyncImage` 原生支持 Compose；GIF 与超大图的成熟度不如 Glide。Coil 3 起网络层拆成 `coil-network-okhttp`，可多平台共用。
+* 选型：Compose 项目 → Coil；已有大量 Glide 自定义变换/动图 → 留 Glide；同一工程不要混用两套图片缓存。
+* 通用要点：按 View 尺寸采样（`inSampleSize` 或 ImageDecoder + 目标尺寸）、占位图/错误图、磁盘缓存、不在主线程 decode、列表滚动时暂停加载。
+
+```kotlin
+// Glide
+Glide.with(imageView)
+    .load(url)
+    .placeholder(R.drawable.placeholder)
+    .error(R.drawable.error)
+    .centerCrop()
+    .into(imageView)
+
+// Coil
+imageView.load(url) {
+    placeholder(R.drawable.placeholder)
+    error(R.drawable.error)
+    crossfade(true)
+}
+
+// Coil + Compose
+AsyncImage(model = url, contentDescription = null, contentScale = ContentScale.Crop)
+```
+
+### 130.9 依赖注入与架构（Hilt + MVVM/MVI）
+
+* **Hilt**：基于 Dagger 的编译期 DI。`@HiltAndroidApp` 生成 Application 组件，`@AndroidEntryPoint` 注入 Activity/Fragment/Service，`@HiltViewModel` 注入 ViewModel，第三方对象用 `@Module @InstallIn(SingletonComponent::class)` 提供。
+* 作用域：`@Singleton`（应用级）、`@ActivityRetainedScoped`（跨配置变更）、`@ViewModelScoped`（ViewModel 内共享）。依赖图错误在编译期暴露，代价是构建变慢（KSP）。
+* **MVVM**：ViewModel 持有状态与业务逻辑，View 观察 `StateFlow`；**MVI**：`Intent → Reducer → State` 单向数据流，状态不可变，便于回放与测试。页面状态多、事件复杂时 MVI 更省心，否则 MVVM 更轻。
+* 分层：`ui`（View/Compose + ViewModel）/ `domain`（Repository 接口、可选 UseCase）/ `data`（Repository 实现、网络、Room）。
+* 面试要点：ViewModel 不能持有 View/Activity（会泄漏），需要 Context 用 `AndroidViewModel` 或注入 `applicationContext`；手写 DI、Hilt、Koin 的取舍。
+
+```kotlin
+@HiltAndroidApp class App : Application()
+
+@AndroidEntryPoint
+class MainActivity : AppCompatActivity() {
+    private val vm: MainViewModel by viewModels()
+}
+
+@HiltViewModel
+class MainViewModel @Inject constructor(private val repo: UserRepository) : ViewModel()
+
+@Module
+@InstallIn(SingletonComponent::class)
+object NetworkModule {
+    @Provides @Singleton fun okHttp(): OkHttpClient = OkHttpClient.Builder().build()
+}
+```
+
+### 130.10 targetSdk 35/36 需要关注的行为变更
+
+* **edge-to-edge 强制**：15（API 35）起 targetSdk 35 的窗口默认不再为系统栏留白，16（API 36）去掉 `windowOptOutEdgeToEdgeEnforcement` 这个退路。做法是 `enableEdgeToEdge()` + 根布局按 `systemBars`/`displayCutout` insets 加 padding，并逐一回归沉浸式页面。
+* **16 KB 页大小**：15 起出现 16 KB 设备，Play 从 2025-11-01 起要求 targetSdk ≥ 35 且含 native 代码的包支持 16 KB。`.so` 的 LOAD 段 `p_align` 必须是 0x4000，NDK r28+/AGP 8.5.1+ 默认支持，打包用 `useLegacyPackaging = false`，自查用 `zipalign -c -P 16 -v 4` 和 `readelf -lW`。
+* **前台服务超时**：15 起 `dataSync`/`mediaProcessing` 类型 24 小时内累计最多 6 小时，超时回调 `Service.onTimeout()`，必须在里面保存进度并 `stopSelf()`；长任务拆成分片 + WorkManager。
+* **其它必查**：14 起动态注册广播要指定 `RECEIVER_EXPORTED`/`RECEIVER_NOT_EXPORTED`；16 起大屏（`smallestWidth ≥ 600dp`）忽略方向锁定与 `resizeableActivity` 限制，预测性返回默认开启。
+
+```kotlin
+// 15+：一行开启 edge-to-edge，再按 insets 处理 padding
+enableEdgeToEdge()
+ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.root)) { v, insets ->
+    val bars = insets.getInsets(
+        WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
+    )
+    v.setPadding(bars.left, bars.top, bars.right, bars.bottom)
+    insets
+}
+```
+
+```kotlin
+// app/build.gradle.kts
+android {
+    compileSdk = 36
+    defaultConfig { targetSdk = 36 }
+    packaging { jniLibs { useLegacyPackaging = false } } // 16 KB 对齐的前提
+}
+```
+
+* 逐版本行为变更表、16 KB 检查命令、面试问答见 **[Android版本适配](Android版本适配.md)**。

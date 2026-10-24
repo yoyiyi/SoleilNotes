@@ -2,7 +2,7 @@
 
 > 本文件由 `scripts/gen_index.py` 自动生成，请勿手工编辑；新增笔记后执行 `python scripts/gen_index.py` 更新。
 
-当前共收录 **245** 篇笔记。
+当前共收录 **250** 篇笔记。
 
 ## Android
 
@@ -14,8 +14,10 @@
 - [Android基础](Android/Android基础.md)
 - [Android基础temp](Android/Android基础temp.md)
 - [Android新特性](Android/Android新特性.md)
+- [Android版本适配](Android/Android版本适配.md)
 - [Android系统启动](Android/Android系统启动.md)
 - [Android系统架构](Android/Android系统架构.md)
+- [Android面试题精选（2025）](Android/Android面试题精选（2025）.md)
 - [Apk打包流程](Android/Apk打包流程.md)
 - [Binder机制](Android/Binder机制.md)
 - [Bitmap](Android/Bitmap.md)
@@ -33,9 +35,11 @@
 - [应用程序进程启动](Android/Framework/应用程序进程启动.md)
 - [Handler](Android/Handler.md)
 - [HandlerThread](Android/HandlerThread.md)
+- [Hilt依赖注入](Android/Hilt依赖注入.md)
 - [Hook技术](Android/Hook技术.md)
 - [IntentService](Android/IntentService.md)
 - [JNI基础](Android/JNI基础.md)
+- [Jetpack Compose](Android/Jetpack%20Compose.md)
 - [Jetpack](Android/Jetpack.md)
 - [LayoutInflater](Android/LayoutInflater.md)
 - [MMKV](Android/MMKV.md)
@@ -54,6 +58,7 @@
 - [函数式编程](Android/函数式编程.md)
 - [协程](Android/协程.md)
 - [广播启动过程](Android/广播启动过程.md)
+- [应用架构MVVM与MVI](Android/应用架构MVVM与MVI.md)
 - [应用程序进程启动过程](Android/应用程序进程启动过程.md)
 - [01.应用崩溃优化](Android/性能优化/01.应用崩溃优化.md)
 - [02.内存优化](Android/性能优化/02.内存优化.md)

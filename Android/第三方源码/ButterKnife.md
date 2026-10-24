@@ -1,5 +1,8 @@
 ## 1 基本使用
 
+> **时效提示**：本文写于 2019 年前后，`ButterKnife` 目前已归档停止维护（最后版本 10.2.1）。
+> 生产环境推荐 `ViewBinding`（复杂场景可了解 DataBinding / Compose），见文末「现状与替代方案」。
+
 app 的 build.gradle 导入
 
 ```java
@@ -322,3 +325,74 @@ public final class ButterKnifeProcessor extends AbstractProcessor {//注解处�
 }
 ```
 
+## 3 现状与替代方案（2025）
+
+### 3.1 维护状态
+
+ButterKnife 已归档停止维护。作者 Jake Wharton 于 2021 年将仓库设为只读，最后一个正式版本是 2019 年的 10.2.1。它被淘汰的根本原因不是“不好用”，而是 ViewBinding 把它的核心价值——省掉 findViewById、编译期生成绑定——变成了官方能力，还不需要注解处理器、不需要额外依赖、不在运行期反射查找 `Xxx_ViewBinding`。
+
+### 3.2 替代方案：ViewBinding
+
+在 `app/build.gradle` 中开启（Android Gradle Plugin 3.6+）：
+
+```groovy
+android {
+    buildFeatures {
+        viewBinding true
+    }
+}
+```
+
+开启后每个布局 `activity_main.xml` 会生成 `ActivityMainBinding`，Java 用法：
+
+```java
+public class MainActivity extends AppCompatActivity {
+    private ActivityMainBinding binding;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        binding = ActivityMainBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
+        binding.tvName.setText("ViewBinding");
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        binding = null; // Fragment 中在 onDestroyView 置空，避免内存泄漏
+    }
+}
+```
+
+Kotlin 写法：
+
+```kotlin
+class MainActivity : AppCompatActivity() {
+    private lateinit var binding: ActivityMainBinding
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+        binding.tvName.text = "ViewBinding"
+    }
+}
+```
+
+### 3.3 迁移要点
+
+* `@BindView(R.id.tv_name) TextView mTvName` → `binding.tvName`，字段声明和 `ButterKnife.bind(this)` 一起删掉。
+* `@OnClick(R.id.btn)` → `binding.btn.setOnClickListener(v -> ...)`，不再需要注解。
+* `ButterKnife.unbind()` 不再需要：binding 随 Activity/Fragment 的 View 生命周期释放，Fragment 记得在 `onDestroyView` 置空。
+* RecyclerView：`ViewHolder` 直接持有 `ItemXxxBinding`，在 `onCreateViewHolder` 中 `inflate`，`onBindViewHolder` 中赋值。
+* 清理 `annotationProcessor 'com.jakewharton:butterknife-compiler'` 与混淆文件里的 butterknife `-keep` 规则。
+* 复杂场景才用 DataBinding（`<layout>` 表达式、双向绑定、`BindingAdapter`），纯新项目可以直接上 Compose；Kotlin Synthetics（`kotlinx.android.synthetic`）已随 Kotlin 1.8 移除，不要作为迁移目标。
+
+### 3.4 面试怎么答
+
+* 「简历写了 ButterKnife 会被问什么」：先讲它解决什么问题（免 `findViewById`、`@OnClick`），再讲原理（APT 生成 `Xxx_ViewBinding`，`bind()` 反射加载构造器并缓存），最后主动说“已归档，新项目用 ViewBinding”，把话题带到熟悉的新方案。
+* 「为什么换 ViewBinding」：编译期生成、类型安全（id 写错直接编译失败）、零反射、无额外依赖、官方维护；代价只是每个布局多一个绑定类。
+* 「ViewBinding 和 DataBinding 区别」：ViewBinding 只提供视图引用，轻量单向；DataBinding 额外支持 `<layout>` 表达式、双向绑定、可观察字段，但编译更慢。
+* 「Fragment 里怎么避免内存泄漏」：`onCreateView` 创建、`onDestroyView` 置空，因为 Fragment 实例比它的 View 活得久。
+* 「Compose 项目还要 ViewBinding 吗」：纯 Compose 不需要，存量的 View 页面可以和 Compose 混用。

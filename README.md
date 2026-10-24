@@ -22,6 +22,14 @@
 ### :hot_pepper: Android
 
 * [Android基础](Android/Android基础.md)
+* 现代 Android（2020—2025）
+
+  * [Android 版本适配（6.0—16）](Android/Android版本适配.md)
+  * [Jetpack Compose](Android/Jetpack Compose.md)
+  * [Kotlin 协程与 Flow](Android/协程.md)
+  * [Hilt 依赖注入](Android/Hilt依赖注入.md)
+  * [应用架构 MVVM 与 MVI](Android/应用架构MVVM与MVI.md)
+  * [Android 面试题精选（2025）](Android/Android面试题精选（2025）.md)
 * Framework
 
   * [View 体系](Android/View体系.md)

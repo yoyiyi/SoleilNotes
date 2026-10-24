@@ -1,5 +1,8 @@
 ## 1 简介
 
+> **时效提示**：本文写于 2019 年前后，`EventBus` 仍可用，但事件总线模式已不再是主流方案。
+> 生产环境推荐 `Kotlin Flow / SharedFlow`（或 `LiveData`），见文末「现状与替代方案」。
+
 EventBus 是用于Android 的事件**发布-订阅**总线。
 
 ```java
@@ -450,3 +453,82 @@ public void postSticky(Object event) {
     }
 ```
 
+## 3 现状与替代方案（2025）
+
+### 3.1 维护状态
+
+EventBus 仍在发布版本（3.3.x），但**事件总线模式在大型项目中已不再推荐**。它不是“不能用”，而是代价被低估了：发布者和订阅者之间没有显式契约，谁发、谁收、在哪个线程收，只能靠全局搜索和运行日志推断；`register/unregister` 与生命周期稍有错配就会泄漏或漏收。
+
+### 3.2 替代方案：Kotlin Flow
+
+ViewModel 中用 `SharedFlow` 承载一次性事件，`StateFlow` 承载 UI 状态：
+
+```kotlin
+sealed interface UiEvent {
+    data class ShowToast(val message: String) : UiEvent
+    data object NavigateToDetail : UiEvent
+}
+
+private val _events = MutableSharedFlow<UiEvent>(
+    replay = 0,                          // 不重放旧事件
+    extraBufferCapacity = 1,
+    onBufferOverflow = BufferOverflow.DROP_OLDEST
+)
+val events: SharedFlow<UiEvent> = _events.asSharedFlow()
+
+fun onSaveClicked() {
+    viewModelScope.launch { _events.emit(UiEvent.ShowToast("已保存")) }
+}
+```
+
+页面侧用 `repeatOnLifecycle` 收集，等价于 EventBus 的 `register/unregister`，但由生命周期自动管理：
+
+```kotlin
+lifecycleScope.launch {
+    repeatOnLifecycle(Lifecycle.State.STARTED) {
+        viewModel.events.collect { event ->
+            when (event) {
+                is UiEvent.ShowToast -> Toast.makeText(
+                    this@MainActivity, event.message, Toast.LENGTH_SHORT
+                ).show()
+                UiEvent.NavigateToDetail -> startActivity(...)
+            }
+        }
+    }
+}
+```
+
+Compose 中直接 `LaunchedEffect` + `collect`；如果确实需要全局事件通道，可以封装成基于 `MutableSharedFlow` 的单例，而不是再引入 EventBus：
+
+```kotlin
+object AppEvents {
+    private val _events = MutableSharedFlow<Any>(extraBufferCapacity = 64)
+    val events: SharedFlow<Any> = _events.asSharedFlow()
+
+    fun post(event: Any) {
+        _events.tryEmit(event)
+    }
+}
+```
+
+### 3.3 事件总线的问题
+
+* 隐式依赖：`post` 和 `@Subscribe` 没有编译期约束，删掉订阅方不会报错，重构全靠记忆。
+* 难追踪：一个事件可能有多个订阅者，调用链断裂，排查只能全局搜索事件类型。
+* 生命周期：忘记 `unregister` 就泄漏，`ThreadMode.MAIN` 与页面可见性无关，容易在后台更新 UI。
+* 粘性事件：`postSticky` 语义像全局变量，状态来源不清晰；全局单例还让单测之间互相污染。
+
+### 3.4 迁移步骤
+
+* 把事件模型改成 `sealed interface/class`，按业务归类（如 `UiEvent`、`AppEvent`），替代随意的 `MessageEvent`。
+* 持有事件的单例改为 ViewModel 内的 `MutableSharedFlow`，`post()` 改为 `emit()/tryEmit()`。
+* `register/unregister` 改为 `repeatOnLifecycle(STARTED)` 内 `collect`，页面不可见时自动停止收集。
+* 跨页面通信改走 `SavedStateHandle`、Navigation 返回值或共享的 Repository，不要再用全局总线。
+
+### 3.5 面试怎么答
+
+* 「为什么从 EventBus 迁到 Flow」：Flow 显式、可组合、生命周期感知、可测试；`repeatOnLifecycle` 替代手动注册，冷流按需执行。
+* 「EventBus 有什么问题」：隐式依赖、难追踪、生命周期易错、粘性事件像全局变量、事件多时难以维护。
+* 「Flow 和 LiveData 区别」：LiveData 生命周期感知但操作符少、以主线程为主；Flow 是冷流、操作符丰富、可切换线程，配合 `repeatOnLifecycle` 使用。
+* 「SharedFlow 和 StateFlow 区别」：StateFlow 有初始值、会去重并重放最新值，适合 UI 状态；SharedFlow 可配置 replay/buffer，适合一次性事件，避免页面重建时重复弹 Toast。
+* 「模块间解耦除了事件总线还有什么」：接口下沉 + DI、Navigation、Repository 暴露 Flow、跨进程用 Binder 或消息队列。

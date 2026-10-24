@@ -1,4 +1,8 @@
 # 1、简介
+
+> **时效提示**：本文写于 2019 年前后，`greenDAO` 目前已停止维护（仓库已归档）。
+> 生产环境推荐 `Room`（KSP + 协程），见文末「现状与替代方案」。
+
 这是 Android 进阶笔记第三篇，greenDAO 的源码分析，greenDAO 是一个开源的 ORM（对象关系映射），简单来讲通过对象和数据库之间映射的元数据，完成关系型数据的操作技术，如果你有后台开发经验，一定不会陌生。下面我们来看一看 greenDAO 的入门使用。
 # 2、入门
 ## 2.1 配置 greenDAO 插件和库
@@ -551,3 +555,84 @@ public void clearIdentityScope() {
 # 4、参考
 [GreenDao源码分析](https://mp.weixin.qq.com/s?__biz=MzIwMTAzMTMxMg==&mid=2649492577&idx=1&sn=b35b0ef0f3769efa8c5d49fc5d60dd80&chksm=8eec879eb99b0e8881dd83cac912192df742ad547ccd274b7fccd2995edd08b095e1fd556cfe&scene=38#wechat_redirect)
 [Android主流三方库源码分析（四、深入理解GreenDao源码）](https://jsonchao.github.io/2018/12/22/Android%E4%B8%BB%E6%B5%81%E4%B8%89%E6%96%B9%E5%BA%93%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90%EF%BC%88%E5%9B%9B%E3%80%81%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3GreenDao%E6%BA%90%E7%A0%81%EF%BC%89/)
+
+# 5、现状与替代方案（2025）
+
+## 5.1 维护状态
+
+greenDAO 已停止维护，仓库归档，官方把精力转向同门的 ObjectBox。它当年的优势（Gradle 插件生成 DAO、`IdentityScope` 缓存、性能好）在 Room + KSP + 协程面前已经不明显；更关键的是它与 AGP、KSP 的新版本逐渐脱节，升级构建工具链时会成为负担。
+
+## 5.2 替代方案：Room
+
+Room 是 Jetpack 官方 ORM，注解处理生成实现，SQL 在编译期校验。`app/build.gradle` 配置 KSP：
+
+```groovy
+plugins {
+    id 'com.google.devtools.ksp' version '2.0.21-1.0.28'
+}
+
+dependencies {
+    implementation 'androidx.room:room-runtime:2.6.1'
+    implementation 'androidx.room:room-ktx:2.6.1'
+    ksp 'androidx.room:room-compiler:2.6.1'
+}
+```
+
+实体、DAO、数据库与 Migration 的最小示例：
+
+```kotlin
+@Entity(tableName = "tb_student")
+data class Student(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val name: String,
+    val age: Int,
+    val nickname: String? = null
+)
+
+@Dao
+interface StudentDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(student: Student): Long
+
+    @Query("SELECT * FROM tb_student ORDER BY id DESC")
+    suspend fun loadAll(): List<Student>
+
+    @Query("DELETE FROM tb_student WHERE id = :id")
+    suspend fun deleteById(id: Long)
+}
+
+@Database(entities = [Student::class], version = 2, exportSchema = true)
+abstract class AppDatabase : RoomDatabase() {
+    abstract fun studentDao(): StudentDao
+
+    companion object {
+        val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE tb_student ADD COLUMN nickname TEXT")
+            }
+        }
+    }
+}
+
+val db = Room.databaseBuilder(context, AppDatabase::class.java, "test.db")
+    .addMigrations(AppDatabase.MIGRATION_1_2)
+    .build()
+```
+
+## 5.3 迁移要点
+
+* `DaoMaster.DevOpenHelper` 升级时 `dropAllTables` → Room 必须显式写 `Migration` 并 `addMigrations`，否则启动直接抛异常；`fallbackToDestructiveMigration()` 只能在调试期用。
+* `DaoSession` 与 `App.getIntance().getDaosession().getStudentEntityDao()` → `RoomDatabase` 单例 + `db.studentDao()`。
+* `insert/update/delete/loadAll` → `@Insert/@Update/@Delete/@Query`；Room 在编译期校验表名、列名和 SQL，写错直接构建失败。
+* greenDAO 的 `IdentityScope` 一级缓存 → Room 不再隐式缓存，需要时在 Repository 层做内存缓存或用 `Flow` 观察表变化；关联查询用 `@Relation`、`@Transaction`。
+* 线程：Room 默认禁止主线程查询，DAO 用 `suspend` 或返回 `Flow`，Room 自己切到 IO 线程。
+* 注解处理：greenDAO 依赖 Gradle 插件，Room 用 KSP（Kotlin）或 KAPT（Java）。
+* 字段映射：`@Id(autoincrement = true)` → `@PrimaryKey(autoGenerate = true)`，`@Property(nameInDb = ...)` → `@ColumnInfo(name = ...)`。
+
+## 5.4 面试怎么答
+
+* 「greenDAO 为什么被淘汰」：项目归档停更、Gradle 插件式代码生成与 AGP/KSP 脱节、没有原生协程与 Flow 支持；Room 是官方方案，编译期校验 SQL，和协程、Paging、Compose 集成好。
+* 「greenDAO 和 Room 的差异」：greenDAO 插件生成 DAO + `IdentityScope` 缓存；Room 注解 + KSP 生成实现，默认不缓存，行为更可预期。
+* 「Room 的 Migration 怎么做」：`Migration(old, new)` 里写 `ALTER TABLE`，`addMigrations` 注册，改表必须同时升 `version`；用 `MigrationTestHelper` 做迁移测试，别用破坏性迁移糊弄。
+* 「greenDAO 查询拿不到最新数据的 bug」：`IdentityScope` 命中旧对象，需要 `DaoSession.clear()`；换成 Room 后这类隐式缓存问题自然消失。
+* 「数据库选型怎么答」：新项目就选 Room（官方、KSP、协程）；需要跨平台可提 SQLDelight，极致性能或高并发可评估 ObjectBox 或原生 SQLite。

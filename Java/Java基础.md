@@ -1214,3 +1214,399 @@ int f() {};
 
 
 
+## 101 Java 9—21 新特性与面试考点
+
+> 上面 1—100 是 Java 8 及以前的经典题，本章补 9—21 的增量。每个特性四段：**一句话定义** → **最小可运行代码** → **面试怎么问 / 怎么答** → **Android 端可用性**。
+>
+> 主线：**语法糖编译完就不依赖 JDK，Android 大多能用；库 / 运行时特性依赖新的 `java.*` 类或 JVM 运行时，Android 上要么没 API，要么 desugaring 也救不了。**
+
+### 101.1 模块化系统 JPMS（Java 9）
+
+**一句话**：用 `module-info.java` 声明「依赖谁、导出谁」，把 classpath 的平坦世界换成有边界的模块图，依赖缺失和包冲突在启动期暴露，而不是跑到某行才 `NoClassDefFoundError`。
+
+```java
+// src/com.example.app/module-info.java
+module com.example.app {
+    requires java.sql;                                 // 依赖 java.sql 模块
+    requires transitive java.logging;                  // 透传：依赖我的模块也能用
+    exports com.example.api;                           // 只有这个包对外可见
+    exports com.example.internal to com.example.test;  // 定向导出，只给测试模块
+    opens com.example.model;                           // 允许反射（序列化 / 框架用）
+    uses com.example.spi.Plugin;                       // ServiceLoader 消费方
+    provides com.example.spi.Plugin with com.example.impl.PluginImpl;
+}
+```
+
+**面试怎么问 / 怎么答**
+
+- 问「解决了什么」：①强封装，外部不能再反射 `java.base` 内部类（JDK 16 默认拒绝，17 移除 `--illegal-access`）；②可靠配置，依赖缺失启动即失败；③`jlink` 可按模块裁剪运行时。
+- 问「classpath 与 module-path」：classpath 取第一个匹配、允许同名类覆盖；module-path 是模块图，有 `requires / exports` 边界，同包跨模块（split package）直接报错。
+- 问「为什么业务里很少用」：三方库未必模块化（automatic module 名字从 jar 文件名推导，不稳）、Spring 大量反射要一路 `--add-opens`、Maven 多模块已解决依赖管理。实际更多是「被动遇到」：升 17 后反射 JDK 内部类抛 `InaccessibleObjectException`，加 `--add-opens java.base/java.lang=ALL-UNNAMED`。
+
+**Android 端可用性**：❌ ART 没有模块路径，AGP 不认 `module-info.java`，D8 / R8 把 `module-info.class` 当无关文件跳过。Android 的「模块化」是 Gradle module / Dynamic Feature / AAB，和 JPMS 无关。
+
+### 101.2 `var` 局部变量类型推断（Java 10）
+
+**一句话**：编译器按初始化表达式推断局部变量的静态类型，只省「写」不改类型——不是动态类型，也不是 JS 的 `var`。
+
+```java
+var list = new ArrayList<String>();               // ArrayList<String>
+var map = new HashMap<String, List<Integer>>();
+var entry = map.entrySet().iterator().next();     // Map.Entry<String, List<Integer>>
+try (var in = new FileInputStream("a.txt")) { }   // 资源变量也能推
+var obj = new Object() { void hello() { } };      // 静态类型是匿名类
+obj.hello();                                      // 普通写法拿不到 hello()
+```
+
+**限制**：`var a;`、`var b = null;`、`var c = {1, 2, 3};` 都编译不过；只能用于局部变量（含 for、try-with-resources），字段、参数、返回值不行，`class X { var f = 1; }` 非法。
+
+**面试怎么问 / 怎么答**
+
+- 问「`var` 是关键字吗」：不是，是保留类型名——`int var = 1;` 合法，`class var {}` 不合法。
+- 问「`var` 是 final 吗」：不是，可重新赋值；要不可变写 `final var`。
+- 问「和 Kotlin 的 `val` / `var` 区别」：Kotlin 的 `val` 是只读引用（≈ `final var`），`var` 可重新赋值，可变性由类型系统保证；Kotlin 推断覆盖属性 / 返回值，Java 的 `var` 只有局部变量。
+
+**Android 端可用性**：✅ 纯编译期语法，minSdk 无关，只要 `sourceCompatibility` 够（AGP 7.0+ 可设 11）。注意 Kotlin 里 `var` 是关键字，混编别混语义。
+
+### 101.3 集合工厂方法与 `List.of` 的不可变性坑（Java 9 / 10）
+
+**一句话**：`List.of / Set.of / Map.of` 提供「一次写完、真不可变、禁 null」的集合字面量，`List.copyOf`（10）做防御性拷贝。
+
+```java
+List<String> a = List.of("a", "b");                // 9
+Set<Integer> b = Set.of(1, 2, 3);                  // 重复元素直接 IllegalArgumentException
+Map<String, Integer> c = Map.of("a", 1, "b", 2);   // 最多 10 对，更多用 Map.ofEntries
+List<String> d = List.copyOf(a);                   // 10：入参含 null 会 NPE
+var e = new ArrayList<>(a);                        // 要可变就显式包一层
+
+// 常见的坑（面试常考）
+List.of("a", "b").add("c");          // ✗ UnsupportedOperationException
+List.of("a", "b").set(0, "z");       // ✗ 连 set 都不行
+List.of("a", null);                  // ✗ NPE：工厂方法禁 null
+List.of("a").contains(null);         // ✗ 也 NPE（实现里先 requireNonNull）
+Arrays.asList("a", "b").set(0, "z"); // ✓ 固定大小：能 set，不能 add / remove
+List.of(new int[]{1, 2}).size();     // 1！基本类型数组不展开，得到 List<int[]>
+```
+
+**面试怎么问 / 怎么答**
+
+- 问「`List.of` 和 `Arrays.asList` 区别」：可变性（都不能增删，`List.of` 连 `set` 都不行）、null（`List.of` 禁 null）、本质（`List.of` 是独立不可变实现，`Arrays.asList` 是数组视图，改原数组会变）。
+- 问「为什么禁 null」：避免 `contains(null)` / `indexOf(null)` 语义二义，实现也更省内存。
+- 问「不可变集合怎么选」：对外返回用 `List.copyOf` / `List.of`；`Collections.unmodifiableList` 只是视图，底层还能被别处改，不算真防御。
+
+**Android 端可用性**：⚠️ `List.of / Set.of / Map.of` 是 API 30（Android 11）才进 framework 的 `java.util` 方法，低 minSdk 会报 NewApi；`desugar_jdk_libs` 主覆盖 `java.time / stream / function`，不保证 backport 这些工厂。低版本用 Kotlin 的 `listOf / mapOf`。
+
+### 101.4 `Optional` 增强 + `String` 新 API + 文本块
+
+**一句话**：Java 9—11 补齐了 Optional 的空分支处理，11 给 String 加了空白、裁剪、重复、分行，15 的文本块让多行字符串回到可读状态。
+
+```java
+// Optional：9 加 ifPresentOrElse / or / stream，10 加无参 orElseThrow，11 加 isEmpty
+Optional<String> opt = Optional.of("42");
+opt.ifPresentOrElse(v -> System.out.println("有值：" + v),
+                    () -> System.out.println("空值"));
+int n = opt.map(Integer::parseInt).orElseThrow();     // 10：空则 NoSuchElementException
+
+// String
+"  \n\t ".isBlank();         // true（11）：全空白，比 trim().isEmpty() 语义清楚
+"  hi  ".strip();            // "hi"（11）：按 Unicode 空白裁剪，trim 只裁 <= U+0020
+"ab".repeat(3);              // "ababab"（11）
+"%s=%d".formatted("x", 1);   // "x=1"（15，等价 String.format）
+
+// 文本块（15）：内容从下一行开始，结束 """ 的位置决定剥掉多少公共缩进
+String json = """
+        {"name": "Soleil", "tags": ["java", "android"]}
+        """;
+String one = """
+        a \
+        b""";                // "a b"：行尾 \ 表示不换行
+```
+
+**面试怎么问 / 怎么答**
+
+- 问「`orElse` 和 `orElseGet`」：`orElse` 的默认值先算好再传，无论空不空都求值；`orElseGet` 只在空时调 Supplier。默认值昂贵或有副作用时用错就是 bug。
+- 问「Optional 能当字段 / 参数吗」：不建议，它是返回类型工具（字段用 null 或空集合，参数用重载），且不实现 `Serializable`，别进 DTO。问「文本块是语法糖吗」：是，编译期变成普通 String 常量、运行时零开销，行尾空白默认被清（要保留用 `\s`）。
+
+**Android 端可用性**：⚠️ `Optional` 本身 API 24+ 有、低版本可 desugar；但 `Optional.isEmpty()`、`String.isBlank/strip/repeat/lines` 要 **API 33（Android 13）**，且 `java.lang.String` 是 bootclasspath 类无法脱糖——低 minSdk 用 Kotlin 的 `isBlank()`。文本块 ✅ 纯语法。
+
+### 101.5 switch 表达式与 `yield`（Java 14）
+
+**一句话**：switch 从「语句」升级成「表达式」，`->` 标签消除穿透，`yield` 从块里交回值，编译器还检查穷尽性。
+
+```java
+enum Day { MON, TUE, WED, THU, FRI, SAT, SUN }
+
+static int restHours(Day day) {
+    return switch (day) {                     // 表达式：有返回值，必须穷尽
+        case MON, TUE, WED, THU, FRI -> 2;    // 箭头标签：无穿透、不用 break
+        case SAT, SUN -> 8;
+    };                                        // enum 全覆盖，不需要 default
+}
+
+static String name(int code) {
+    return switch (code) {
+        case 1 -> "one";
+        case 2 -> "two";
+        default -> { String s = "unknown-" + code; yield s; }  // 块内 yield 交值
+    };
+}
+```
+
+**面试怎么问 / 怎么答**
+
+- 问「比语句好在哪」：①表达式化，能直接 `return` / 赋值；②没有 fallthrough，忘写 `break` 的经典 bug 消失；③穷尽性编译期检查（enum 漏项、sealed 漏子类型直接编译失败）；④块内 `yield` 交值。
+- 问「`yield` 和 `return` 区别」：`yield` 只结束当前 switch 表达式块并交值，方法继续往下走；`return` 结束整个方法。追问「能 `case null` 吗」：14 这版不行、遇 null 直接 NPE，显式 `case null` 是 21 模式匹配 switch 才有的。
+
+**Android 端可用性**：✅ 纯语法，javac 生成普通字节码，minSdk 无关；要求 `sourceCompatibility >= 14`（AGP 8.x 一般设 17）。`case null` 要 21 语言级别，Android 侧通常还到不了。
+
+### 101.6 record（Java 16）
+
+**一句话**：`record` 是「不可变数据载体」的语法：一行声明分量，编译器生成规范构造器、访问器、`equals / hashCode / toString`。
+
+```java
+public record Point(int x, int y) {
+    public Point {                      // 紧凑构造器：做校验 / 归一化，不用重复赋值
+        if (x < 0 || y < 0) throw new IllegalArgumentException("negative");
+    }
+    public int manhattan() { return Math.abs(x) + Math.abs(y); }  // 可以有方法
+    public static Point origin() { return new Point(0, 0); }      // 可以有静态成员
+}
+
+var p = new Point(1, 2);
+System.out.println(p);                         // Point[x=1, y=2]：生成的 toString
+System.out.println(p.equals(new Point(1, 2))); // true：按分量比较
+System.out.println(p.x());                     // 1：访问器是 x()，不是 getX()
+```
+
+**边界**：能实现接口、写方法、写静态字段、被 record pattern 解构；不能继承别的类（已隐式继承 `java.lang.Record`）、不能被继承（隐式 final）、不能声明实例字段、没有 setter。
+
+**序列化**：按分量序列化、走规范构造器反序列化（校验逻辑依然生效，这是相对普通类的安全优势）；`writeObject / readObject` 会被忽略，`writeReplace / readResolve` 仍有效；`serialVersionUID` 只能是 `0L`，声明成别的值直接 `InvalidClassException`。
+
+**与 Lombok `@Data` 对比**
+
+- 可变性：record 不可变、无 setter；`@Data` 可变，生成 setter。
+- 访问器：record 是 `x()`；`@Data` 是 JavaBean 的 `getX() / setX()`，依赖 getter 反射的老框架只认后者。
+- 依赖与能力：record 是 JDK 16+ 原生、能被模式解构；`@Data` 依赖注解处理器，不支持解构。
+
+**面试怎么问 / 怎么答**
+
+- 问「record 能替代 Lombok 吗」：不能。record 是不可变值对象，`@Data` 面向可变 JavaBean；JPA 实体要无参构造 + setter + 可被代理（record 是 final），老框架要 `getX()`。纯值对象（坐标、金额、事件、查询结果）用 record 更干净，两者可共存。
+- 问「record 是语法糖吗」：不是——class 文件里有 `Record` 属性，反射有 `isRecord()` / `getRecordComponents()`，框架能识别。
+
+**Android 端可用性**：⚠️ 受限。record 要实现 `java.lang.Record` 和 `java.lang.runtime.ObjectMethods`，这两个类直到 **Android 14（API 34）** 才进 framework，minSdk 低于 34 时 lint 直接报 NewApi；AGP 8.1+ 的 R8 有 record 脱糖，但生成 `equals / hashCode` 的路径依赖 AGP / R8 版本（社区出现过 `Record desugaring ... without a global-synthetics consumer` 构建错误）。稳妥做法：Android 值对象首选 Kotlin `data class`。
+
+### 101.7 sealed 类与 `permits`（Java 17）
+
+**一句话**：`sealed` 把「谁能继承我」写进类型系统：子类型必须显式列出并各自声明 `final / sealed / non-sealed`，编译器知道全集，switch 才能穷尽检查。
+
+```java
+public sealed interface Shape permits Circle, Square, Rect { }
+
+public record Circle(double r) implements Shape { }
+public record Square(double side) implements Shape { }      // record 天然 final
+public non-sealed class Rect implements Shape {             // 允许继续被继承
+    private final double w, h;
+    public Rect(double w, double h) { this.w = w; this.h = h; }
+    double area() { return w * h; }
+}
+
+static double area(Shape s) {
+    return switch (s) {                  // 编译器知道只有三种，不需要 default
+        case Circle c -> Math.PI * c.r() * c.r();
+        case Square q -> q.side() * q.side();
+        case Rect r -> r.area();
+    };
+}
+```
+
+**规则**：子类必须同模块（未命名模块则同包）；`permits` 在子类同文件时可省略；子类必须三选一（`final` / `sealed` / `non-sealed`）；`sealed` 不能和 `final` 同时用。
+
+**与 enum / 抽象类的取舍**
+
+- enum：实例固定且单例，适合状态、类型码（`Day.MON` 就是一个对象）。
+- sealed：子类型固定、实例任意多，每种可带不同字段——`Result = Ok | Err`、`Event = Login | Logout | Click`、`Shape`。常配 record，就是 Java 版 ADT。
+- 抽象类 / 普通接口：允许外部扩展，代价是 switch 必须写 `default`，将来新增子类型时旧代码静默走 default，编译器不提醒。
+
+一句话：**封闭集合用 enum / sealed，开放扩展用抽象类。**
+
+**面试怎么问 / 怎么答**
+
+- 问「sealed 的意义」：把「继承开放」变成可控的封闭集合，让编译期能做穷尽分析；新增子类型时所有 switch 立刻编译失败，逼你处理新分支——这就是 API 演进安全性的来源。
+- 问「`permits` 子类要满足什么」：`final / sealed / non-sealed` 三选一，且与父类同模块（未命名模块则同包）。
+
+**Android 端可用性**：✅ 编译期约束（class 文件的 `PermittedSubclasses` 属性），运行时不依赖新 API，只要语言级别到 17（AGP 8.x + `sourceCompatibility 17`）。
+
+### 101.8 模式匹配（`instanceof` 16 / switch 21）
+
+**一句话**：模式匹配把「判断类型 → 强转 → 用变量」合成一步；Java 16 先支持 `instanceof`，21 扩展成 switch 的类型 / 结构分派。
+
+```java
+static String describe(Object o) {
+    if (o instanceof String s && s.length() > 3) {   // 条件成立即可用 s，不用强转
+        return "long string: " + s;
+    }
+    if (!(o instanceof Integer i)) return "other";   // 提前 return 后，下面也能用 i
+    return "int: " + (i + 1);
+}
+
+// —— switch 模式匹配（21）：类型 + record 解构 + 守卫 ——
+sealed interface Event permits Login, Logout, Click { }
+record Login(String user, Instant at) implements Event { }
+record Logout(String user) implements Event { }
+record Click(int x, int y) implements Event { }
+
+static String handle(Event e) {
+    return switch (e) {
+        case Login(String user, var at) when at.isAfter(Instant.now())
+                -> "future login: " + user;                     // when = 守卫条件
+        case Login(String user, var at) -> "login: " + user;    // record 解构 + var
+        case Logout(String user) -> "logout: " + user;
+        case Click(int x, int y) when x < 0 || y < 0 -> "bad click";
+        case Click(int x, int y) -> "click " + x + "," + y;
+        case null -> "null";            // 21 允许显式处理 null
+    };                                                          // sealed 全覆盖，无 default
+}
+```
+
+**面试怎么问 / 怎么答**
+
+- 问「`instanceof` 模式解决了什么」：消除「判断 + 强转」重复，避免强转写错变量；模式变量作用域是流敏感的——只在条件成立的分支可见，编译器保证不会用到未初始化的变量。
+- 问「switch 模式匹配和旧 switch 区别」：旧 switch 只能按常量（int / String / enum）分派；新 switch 按「类型 + 结构（record 解构）+ 守卫（`when`）」分派，还能对 sealed 层次做穷尽检查。注意模式顺序：宽泛的放后面，被支配（dominated）会编译报错。
+- 问「为什么要 `when` 而不是 `if`」：守卫条件参与穷尽性分析；写成 `if`，编译器就没法判断这个 case 是否覆盖全。
+
+**Android 端可用性**：`instanceof` 模式 ✅ 纯语法；switch 模式匹配 + record 解构 ❌ 目前用不了——需要 21 语言级别，而 AGP 主流稳定组合停在 17。Android 侧用 `if/else + instanceof` 或 Kotlin 的 `when`。
+
+### 101.9 文本块进阶 + `Stream.toList()`（16）+ `Collectors.teeing`（12）
+
+**一句话**：文本块解决多行字符串可读性，`toList()` 让「流转不可变列表」一行搞定，`teeing` 让一次遍历同时算两个聚合。
+
+```java
+String sql = """
+        SELECT id, name
+          FROM user
+         WHERE id = ?
+        """;                            // 结束 """ 的缩进决定剥掉多少公共缩进
+String path = """
+        C:\\temp\\a.txt""";             // 反斜杠仍是转义符，\\ 不能省
+
+// —— Stream.toList（16）与 teeing（12） ——
+var names = Stream.of("b", "a").sorted().toList();    // 16：不可变，允许 null
+names.add("c");                                       // ✗ UnsupportedOperationException
+var mutable = Stream.of("a").collect(Collectors.toList());                  // 可变
+var strict = Stream.of("b", null).collect(Collectors.toUnmodifiableList()); // ✗ NPE
+var nullable = Stream.of("b", null).toList();         // ✓ toList 允许 null
+
+record Stats(long count, int sum) { }
+var stats = Stream.of(1, 2, 3, 4).collect(Collectors.teeing(
+        Collectors.counting(),                    // 下游 1：计数
+        Collectors.summingInt(Integer::intValue), // 下游 2：求和
+        Stats::new));                             // 合并函数 → Stats[count=4, sum=10]
+```
+
+**面试怎么问 / 怎么答**
+
+- 问「`toList()` 和 `collect(toList())` 区别」：`toList()` 返回不可变列表且允许 null；`toUnmodifiableList()` 不可变但遇 null 抛 NPE；`collect(toList())` 返回可变列表（JDK 不承诺具体实现）。
+- 问「`teeing` 什么时候用」：一次遍历要两个聚合结果——总数 + 总和、最大 + 最小、成功 + 失败计数；比跑两遍 stream 省一遍遍历，比自定义 Collector 简单。
+- 问「文本块和拼接 / `\n` 转义区别」：文本块是编译期常量、自动去公共缩进、不用写转义；注意结束三引号的位置会影响剥掉的缩进量，行尾空格默认被清。
+
+**Android 端可用性**：文本块 ✅ 纯语法；`Stream.toList()` / `Collectors.teeing` 是 `java.util.stream` 的新方法，minSdk 低时不一定被 desugar 覆盖，保守写 `collect(Collectors.toList())` 再自己包不可变。
+
+### 101.10 虚拟线程（Java 21，Project Loom）
+
+**一句话**：虚拟线程是 JVM 在用户态调度的线程，阻塞时把载体线程（carrier）让出去，自己只留一个堆上的 continuation，所以能几十万地开；平台线程是 1:1 映射 OS 线程、默认 1MB 栈。
+
+```java
+Thread t = Thread.ofVirtual().name("vt-1").start(() -> System.out.println("virtual"));
+t.join();
+
+// 一个任务一个虚拟线程——不要池化，用完就关（ExecutorService 19 起 AutoCloseable）
+try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+    List<Future<Integer>> futures = IntStream.range(0, 100_000)
+            .mapToObj(i -> executor.submit(() -> {
+                Thread.sleep(1000);          // 阻塞 1s 也不会占死 10 万个 OS 线程
+                return i;
+            }))
+            .toList();
+    System.out.println(futures.size());      // 100000
+}
+```
+
+| 维度 | 平台线程 | 虚拟线程 |
+| --- | --- | --- |
+| 映射 | 1:1 OS 线程 | M:N，多个虚拟线程复用一个 carrier |
+| 栈 | 默认 1MB，创建时预留 | 堆上 continuation，按需增长，KB 级 |
+| 阻塞 | 真占住内核线程，切换 µs 级 | 卸载（unmount），只留 continuation |
+| 适合 | CPU 密集、少量长任务 | 高并发 IO（HTTP、DB、文件） |
+| 池化 | 必须池化 | 不要池化，用完即弃 |
+| 坑 | — | JDK 21 里 `synchronized` 会 pin 载体线程（24 才修） |
+
+**为什么 Android / ART 上不可用**：虚拟线程不是语法糖，是 JVM 运行时的一整套能力（continuation、调度器、与 `Thread` API 集成）。ART 是另一套运行时，`java.lang.Thread` 来自 libcore，没有 `Thread.ofVirtual()` / `newVirtualThreadPerTaskExecutor()`，也没有 continuation——编译不过，或编过了运行时报 `NoSuchMethodError`。desugaring 也救不了：它只能改语法和少量可替换的 `java.*` 类，造不出运行时调度器。
+
+**与 Kotlin 协程的取舍（高频）**
+
+- 实现层与写法：虚拟线程是 JVM 运行时特性（21 正式），同步阻塞写法、`Thread.sleep` 也能让出，靠 interrupt 协作取消；协程是「编译器 CPS 变换 + 库」，要 `suspend`（有传染性），换来结构化并发、取消传播、Flow 背压，且跨 JVM / Android / JS / Native。
+- 取舍：Android 只能协程（ART 没 Loom，Jetpack 全栈是 suspend / Flow）；服务端一堆阻塞老代码要提并发，虚拟线程改造成本最低（不重写签名）；新服务端项目两者都行，要精细取消 / 背压选协程，要「透明替换线程池」选虚拟线程。
+
+**面试怎么问 / 怎么答**
+
+- 问「虚拟线程能替代线程池吗」：能替代「每请求一线程」的业务池，不能替代所有池——CPU 密集任务仍受核数限制；而且**不要池化虚拟线程**，限流改用 `Semaphore`。
+- 问「为什么不能池化」：创建销毁极便宜，池化反而引入队列和状态；它只是把「线程数」这个瓶颈拿掉，瓶颈会转移到下游（DB 连接池、连接数、CPU），不是越多越好。
+
+### 101.11 垃圾回收器演进（G1 / ZGC / Shenandoah）
+
+**一句话**：Java 9 起 G1 成为默认，ZGC / Shenandoah 把停顿压到毫秒级；JDK 17 和 21 的默认 GC **仍然是 G1**，21 的新东西是「分代 ZGC」。
+
+- Java 8：默认 Parallel（吞吐优先，停顿大）。
+- Java 9（JEP 248）：**G1 成为默认**——分 region、可预测停顿（`-XX:MaxGCPauseMillis`）、并发标记 + 年轻代 STW。
+- Java 11（JEP 333）：ZGC 实验——染色指针 + 读屏障，停顿 < 1ms 且基本与堆大小无关，支持 8MB—16TB。
+- Java 12（JEP 189）：Shenandoah 进 OpenJDK（Red Hat）——Brooks 转发指针，并发压缩。
+- Java 14 / 15：CMS 移除（JEP 363）、ZGC 与 Shenandoah 转正（JEP 377 / 379）、Nashorn 移除。
+- Java 17 / 21：默认仍是 G1；21 引入**分代 ZGC**（JEP 439）。
+- 选型：小堆 / 容器 → Serial / Parallel；通用服务 → G1；超大堆 + 极低停顿 → ZGC（21 用分代版）；不想换厂商构建又要低停顿 → Shenandoah（主要在 OpenJDK 发行版）。
+
+参数：`-XX:+UseG1GC`、`-XX:MaxGCPauseMillis=100`、`-Xlog:gc*`（JDK 9 统一日志）、`-XX:+UseZGC -XX:+ZGenerational`（21）。
+
+**Android 端可用性**：❌ 完全不同的体系。Android 跑 DEX + ART，没有 HotSpot，`-XX:+UseG1GC` 这类参数不存在；ART 有自己的 GC（从 CMS 到并发复制 CC，再到分代），日志在 logcat 的 `GC` 里，不是 `-Xlog:gc`。被问「Android 为什么不用 JVM GC」答三点：①字节码不同（DEX 不是 class）；②ART 要和 Zygote fork、低内存设备、前台 / 后台进程优先级配合，GC 要感知进程状态；③JVM GC 假设长跑的服务端负载，Android 是一堆短命小进程。所以 Android 的「GC 调优」是减少分配（对象池、避免自动装箱、`SparseArray`）、`onTrimMemory`，不是换收集器。
+
+### 101.12 面试问答 10 条
+
+**Q1. Java 8 到 21，你觉得最重要的三个特性？** record、sealed + switch 模式匹配、虚拟线程。record 干掉值对象样板且能被模式解构；sealed + 模式匹配把「分支穷尽」从运行时约定变成编译期检查；虚拟线程把高并发 IO 的成本从「线程池怎么配」变成「一个任务一个线程」。关键不是选哪三个，而是每个都能说清「解决了什么旧问题」。
+
+**Q2. record 能不能替代 Lombok 的 `@Data`？** 不能，定位不同。record 不可变：没有 setter、访问器是 `x()` 不是 `getX()`、隐式 final 不能被继承。JPA 实体（要无参构造 + setter + 可代理）、可变 DTO、依赖 JavaBean getter 反射的老框架仍得用 Lombok 或手写。坐标、金额、事件、查询结果这类值对象用 record 更干净，还能配 record pattern 解构。两者可共存。
+
+**Q3. 虚拟线程和 Kotlin 协程的区别？** 虚拟线程是 JVM 运行时能力（21 正式），同步阻塞写法即可，不改函数签名；协程是「编译器 + 库」，要 `suspend`，但有成熟的结构化并发、取消传播、Flow 背压。取舍：Android 只能协程（ART 没 Loom）；服务端阻塞老代码提并发，虚拟线程改造成本最低；新项目要精细取消 / 背压选协程。加分：虚拟线程别池化，JDK 21 的 `synchronized` 会 pin 载体线程。
+
+**Q4. Android 开发要关注哪些 Java 版本特性？** 按「依赖什么」分三类：①纯语法（var、文本块、switch 表达式、instanceof 模式、sealed）——javac 编译期解决，minSdk 无关，只看 AGP 支持的语言级别；②新库 API（`List.of`、`String.isBlank`、Optional 增强、`Stream.toList`）——受 minSdk 限制，部分靠 core library desugaring，`java.lang` 下的新方法基本无解；③运行时特性（record 的 `java.lang.Record`、虚拟线程、JPMS、HotSpot GC）——用不了。结论：业务用 Kotlin，Java 新特性在工具类、单测、服务端模块里用最舒服。
+
+**Q5. desugaring 是什么？** D8 把 class 转 DEX 时，把「低版本没有的东西」改写成等价的老实现，分两层：①语言特性脱糖（lambda、方法引用、接口默认方法、try-with-resources）；②core library desugaring（`desugar_jdk_libs` 把 `java.time`、`java.util.stream`、`java.util.function`、`Optional` 等打进 APK 并重写调用点）。它改不了 JVM 运行时语义（虚拟线程、GC），也改不了 bootclasspath 里的 `java.lang`。开启：`isCoreLibraryDesugaringEnabled = true` + `coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.x")`，代价是包变大、构建变慢。
+
+**Q6. `List.of`、`Arrays.asList`、`new ArrayList` 怎么选？** `List.of`：真不可变、禁 null、无扩容，适合常量表和对外返回值；`Arrays.asList`：数组视图，能 `set` 不能增删，改原数组会跟着变；`new ArrayList<>(List.of(...))`：需要可变时的标准写法；对外防御性拷贝用 `List.copyOf`（`Collections.unmodifiableList` 只是视图，底层还能被别处改）。
+
+**Q7. switch 表达式比传统 switch 好在哪？** ①表达式化，能直接 `return` / 赋值；②`->` 没有 fallthrough，忘写 `break` 的 bug 消失；③穷尽性编译期检查（enum 漏项、sealed 漏子类型直接报错）；④块内 `yield` 交值；⑤能接模式匹配做类型 / 结构分派。旧 switch 的坑：穿透、`default` 掩盖新增枚举、只能当语句用。
+
+**Q8. sealed 和 enum、抽象类怎么取舍？** enum：实例固定且单例，适合状态 / 类型码（每个值就是一个对象）；sealed：子类型固定但实例任意多、每种可带不同字段，适合 `Result / Shape / Event`，常配 record，是 Java 版 ADT；抽象类 / 普通接口：允许外部扩展，就用不了穷尽检查，switch 必须写 `default`，新增子类型时旧代码静默走 default。一句话：封闭集合用 enum / sealed，开放扩展用抽象类。
+
+**Q9. Optional 的使用规范？** ①只做返回类型——字段用 null 或空集合，参数用重载；②别 `get()`，用 `orElseThrow / map / ifPresentOrElse`；③`orElse` 的默认值总会被求值，有开销或副作用就用 `orElseGet`；④别 `Optional.of(null)`（直接 NPE），用 `ofNullable`；⑤`Optional` 不实现 `Serializable`，别塞进 DTO 字段；⑥集合返回值直接返回空集合，不要包 Optional。
+
+**Q10. 升级 JDK 17 / 21 踩过哪些坑？** JPMS 强封装让反射 JDK 内部类抛 `InaccessibleObjectException`（补 `--add-opens`）；CMS 在 14 移除、Nashorn 在 15 移除，老参数 / 脚本直接启动失败；`SecurityManager` 17 起废弃；G1 从 9 起就是默认，老的 Parallel 调参经验不再适用；字节码版本升高后旧 ASM / cglib / Agent 不认 class 61 / 65；`Unsafe` 的内存方法逐步废弃。Android 侧不受这些影响，但 AGP 8 要求 JDK 17，构建链要一起升。
+
+### 101.13 Android 端可用性速查表
+
+| 特性 | 起始版本 | Android | 关键限制 |
+| --- | --- | --- | --- |
+| JPMS `module-info` | 9 | ❌ | D8 忽略，AGP 不解析 |
+| `var` | 10 | ✅ | 纯语法，minSdk 无关 |
+| `List.of` / `Set.of` / `Map.of` | 9 | ⚠️ API 30+ | 低 minSdk 用 Kotlin `listOf` |
+| `Optional` 增强 | 9 / 10 / 11 | ⚠️ 部分 | `Optional` API 24+，`isEmpty` 等要 API 33+ |
+| `String.isBlank/strip/repeat` | 11 | ⚠️ API 33+ | `java.lang` 无法脱糖 |
+| 文本块 | 15 | ✅ | 纯语法 |
+| switch 表达式 / `yield` | 14 | ✅ | 语言级别 14+（AGP 8.x 常用 17） |
+| record | 16 | ⚠️ 受限 | 依赖 `java.lang.Record`（API 34） |
+| sealed | 17 | ✅ | 编译期约束，需语言级别 17 |
+| `instanceof` 模式 | 16 | ✅ | 纯语法 |
+| switch 模式匹配 / record 模式 | 21 | ❌ 目前 | 需语言级别 21，AGP 主流稳定在 17 |
+| `Stream.toList` / `Collectors.teeing` | 12 / 16 | ⚠️ | `java.util.stream` 新方法，低版本用 `collect` |
+| 虚拟线程 | 21 | ❌ | ART 无 Loom，SDK 无 `Thread.ofVirtual` |
+| G1 / ZGC / Shenandoah | 9—21 | ❌ | ART 有自己的 GC |
+
+> 记法：**语法糖能过、`java.lang` 不能过、运行时更不能过。** 面试被追问「这个特性 Android 能不能用」，先分类再给结论，比背版本号稳。
