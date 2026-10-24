@@ -162,7 +162,14 @@
   * [Linux性能排查](C/Linux性能排查.md)
   * [Linux内核与eBPF](C/Linux内核与eBPF.md)
   * [Linux面试题](C/Linux面试题.md)
-* [C++基础](C++/C++基础.md)
+* [C++ 学习路线](C++/000.目录.md)
+* C++
+  * [C++基础](C++/C++基础.md)
+  * [C++详解](C++/C++详解.md)
+  * [C++STL标准库](C++/C++STL标准库.md)
+  * [C++并发编程](C++/C++并发编程.md)
+  * [C++面试题](C++/C++面试题.md)
+  * [C++项目实战](C++/C++项目实战.md)
 * [Dart基础](Flutter/Dart/Dart语言.md)
 * [Flutter 实战](Flutter/Flutter实战/Flutter实战.md)
 
