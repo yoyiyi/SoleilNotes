@@ -2,7 +2,7 @@
 
 > 本文件由 `scripts/gen_index.py` 自动生成，请勿手工编辑；新增笔记后执行 `python scripts/gen_index.py` 更新。
 
-当前共收录 **239** 篇笔记。
+当前共收录 **240** 篇笔记。
 
 ## Android
 
@@ -84,6 +84,7 @@
 
 ## C
 
+- [000.目录](C/000.目录.md)
 - [C基础](C/C基础.md)
 - [Linux基础](C/Linux基础.md)
 

@@ -91,7 +91,7 @@ Exception table: from 7 to 19 target 22 type any
 | `BiasedLockingBulkRevokeThreshold` | 40 | 同类撤销 40 次后该类禁用偏向 |
 | `BiasedLockingDecayTime` | 25000ms | 一段时间无撤销则计数衰减，可重新偏向 |
 
-**版本重点**：JDK 15 的 JEP 374 把偏向锁默认关闭并废弃相关参数；JDK 18（JDK-8256425）移除实现，`-XX:+UseBiasedLocking` 变成 obsolete。很多旧资料仍写「默认开启、延迟 4s」，那只适用于 JDK 14 及以前。
+**版本重点**：JDK 15 的 JEP 374 把偏向锁默认关闭并废弃相关参数（仍可用 `-XX:+UseBiasedLocking` 手动打开，但会告警）；JDK 18（JDK-8256425）移除实现，`-XX:+UseBiasedLocking` 变成 obsolete。很多旧资料仍写「默认开启、延迟 4s」，那只适用于 JDK 14 及以前。
 
 为什么废弃：维护成本高、现代 CPU 的 CAS 已经足够便宜、收益集中在 Hashtable/Vector 等老集合、撤销要 STW，整体性价比下降。
 

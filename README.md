@@ -144,6 +144,7 @@
 <a id="c-linux-dart"></a>
 
 ### :yin_yang: C/C++/Linux/Dart
+* [C 与 Linux 学习路线](C/000.目录.md)
 * [C基础](C/C基础.md)
 * [C++基础](C++/C++基础.md)
 * [Linux基础](C/Linux基础.md)

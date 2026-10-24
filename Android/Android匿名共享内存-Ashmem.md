@@ -90,57 +90,54 @@ Android 12 前后需要特别注意的 API 行为：
 
 ## 6 Java/Kotlin：MemoryFile
 
-`MemoryFile` 是 API 1 的老接口，新版本内部已经改成 `SharedMemory` 的包装，适合按字节读写。
+`MemoryFile` 是 API 1 的老接口，新版本内部是 `SharedMemory` 的包装，适合按字节读写。
 
 ```kotlin
 val size = 4 * 1024 * 1024
-val file = MemoryFile("share-bytes", size)          // 名字仅用于调试
+val file = MemoryFile("share-bytes", size)
 val bytes = ByteArray(size) { it.toByte() }
 file.writeBytes(bytes, 0, 0, bytes.size)
-
-val input = file.getInputStream()                    // 本进程读取
-// 跨进程传 fd 不要用 MemoryFile.getFileDescriptor()，见下面的说明
+val input = file.getInputStream()
 ```
 
-`MemoryFile` 没有公开的 mmap API，想直接映射就用 `SharedMemory`。另外 `MemoryFile.getFileDescriptor()` 在新 SDK 里是 `@hide`/`@UnsupportedAppUsage`（旧代码常见，但普通 App 不应依赖），它返回的 fd 也不会 dup；跨进程传 fd 请用 `SharedMemory.getFd()`。
+`MemoryFile` 没有公开的 mmap API；`getFileDescriptor()` 在 API 27 之后被标记为 `@hide`，普通 App 不应依赖（老代码常见，但会受 hidden API 限制）。要跨进程共享，直接用 `SharedMemory` 的 `Parcelable`，或在 native 用 `ASharedMemory_dupFromJava` 拿 dup 的 fd。
 
 | 维度 | `MemoryFile` | `SharedMemory` |
 | --- | --- | --- |
 | 引入版本 | API 1 | API 27 |
 | 访问方式 | `readBytes` / `writeBytes` / 流 | `mapReadOnly` / `mapReadWrite` 返回 `ByteBuffer` |
-| 传 fd | `getFileDescriptor()`（新 SDK 已 hide） | `getFd()` + `fromFd` |
+| 传 fd | `getFileDescriptor()`（API 27 起 hide） | 本身是 `Parcelable`；fd 由 native dup |
 | 权限控制 | 能力有限 | `setProtect()` 单向移除权限 |
 | 适用 | 老代码兼容、简单字节读写 | 新代码、需要直接映射 |
 
-两者最终都是 `SharedMemory` + fd + mmap；需要 fd 时优先用 `SharedMemory`，不要为了拿 fd 去反射 `MemoryFile` 的隐藏方法。
+两者都基于 fd + mmap；新代码用 `SharedMemory`，不要为了拿 fd 反射隐藏方法。
 
 ## 7 Java/Kotlin：SharedMemory
 
-`SharedMemory` 用 `ByteBuffer` 直接映射，读写不经过 `readBytes` 的数组拷贝：
+`SharedMemory` 用 `ByteBuffer` 直接映射，读写不经过 `readBytes` 的数组拷贝；它本身实现 `Parcelable`，跨进程直接传对象即可：
 
 ```kotlin
 val shm = SharedMemory.create("share-image", size)
 val buffer = shm.mapReadWrite()
-buffer.put(bytes)                                   // 写满后 position = size
+buffer.put(bytes)                              // 写满后 position = size
 
-shm.setProtect(OsConstants.PROT_READ)               // 只影响之后的映射，先写完再降权
-val pfd = ParcelFileDescriptor.fromFd(shm.fd)       // 内部 dup，原 fd 仍由 shm 持有
-sendToRemote(pfd)
-pfd.close()
-shm.close()                                         // 等所有使用者结束后再关
+shm.setProtect(OsConstants.PROT_READ)          // 只影响之后的映射，先写完再降权
+bundle.putParcelable("shm", shm)               // Binder/AIDL 传给对端
 ```
 
 接收端：
 
 ```kotlin
-val shm = SharedMemory.fromFileDescriptor(pfd)      // 接管 pfd，之后不要再 close(pfd)
+val shm = bundle.getParcelable<SharedMemory>("shm")!!
 val buffer = shm.mapReadOnly()
 val out = ByteArray(buffer.remaining())
 buffer.get(out)
 shm.close()
 ```
 
-AIDL 里直接声明 `ParcelFileDescriptor` 参数最稳妥；`SharedMemory` 虽然是 `Parcelable`，但自定义 AIDL 直接引用平台类需要额外声明。服务端要校验 `size` 与 `Os.fstat(fd).st_size`，不要信任对端传来的长度。
+`SharedMemory` 的 `getFd()`/`getFileDescriptor()` 从 API 27 起就是 `@hide`（生命周期容易 double close），Java 层不要调用。需要 fd 时走 native：`ASharedMemory_dupFromJava(env, javaShm)` 返回一个 dup 的 fd（NDK API 27+），再包成 `ParcelFileDescriptor` 或直接 `mmap`。
+
+服务端要校验 `size` 与 `Os.fstat(fd).st_size`，不要信任对端传来的长度；这里 `fd` 指 native 侧拿到的描述符。
 
 ## 8 Native：ashmem_create_region、mmap 与 fd
 
@@ -158,25 +155,31 @@ ASharedMemory_setProt(fd, PROT_READ);   // 之后的映射只读
 * `size` 按页向上取整，`mmap` 的 offset 必须是页大小整数倍，通常传 0；必须用 `MAP_SHARED`。
 * 映射建立后可 `close(fd)`，映射仍有效；但要在关闭前把 fd 传给对端。
 * 接收方至少 `PROT_READ`；写完用 Binder 调用/futex/原子变量通知对端，共享内存本身不提供同步。
+* Java ↔ native：`ASharedMemory_dupFromJava` 从 Java 的 `SharedMemory` 复制 fd，避免 double close。
 
 ## 9 文件描述符跨进程传递：ParcelFileDescriptor
 
-Binder 传 fd 的载体是 `ParcelFileDescriptor`（AIDL 直接支持），底层走 `Parcel.writeFileDescriptor()` / `readFileDescriptor()`。
+AIDL/ContentProvider 传 fd 的载体是 `ParcelFileDescriptor`，底层走 `Parcel.writeFileDescriptor()` / `readFileDescriptor()`。
 
 ```kotlin
-val pfd = ParcelFileDescriptor.fromFd(shm.fd)   // 发送端：fromFd 会 dup 一份
+// 接收端：AIDL 参数中的共享内存 PFD
+val shm = SharedMemory.fromFileDescriptor(pfd)   // 接管 pfd 的 fd，不要再 close(pfd)
+val buffer = shm.mapReadOnly()
+// ... 读取 ...
+shm.close()
+```
+
+```kotlin
+// 发送端：如果手里是 PFD，直接写 Parcel
 parcel.writeParcelable(pfd, 0)
-pfd.close()                                  // Parcel 内部已经 dup
-val in = parcel.readParcelable<ParcelFileDescriptor>(
-    ParcelFileDescriptor::class.java.classLoader
-)
+pfd.close()                                      // Parcel 内部已 dup
 ```
 
 所有权规则（面试常问）：
 
 | 操作 | 是否新建 fd | 谁负责关闭 |
 | --- | --- | --- |
-| `ParcelFileDescriptor.dup(FileDescriptor)` | 是 | 调用方 |
+| `ParcelFileDescriptor.dup(FileDescriptor)` | 是 | 调用方（原 fd 也归调用方） |
 | `ParcelFileDescriptor.fromFd(int)` | 是，内部 dup | 调用方仍持有原 fd |
 | `ParcelFileDescriptor.adoptFd(int)` | 否，接管传入 fd | PFD 的持有方 |
 | `Parcel.writeFileDescriptor(fd)` | 是，Parcel 内部 dup | Parcel 发送/回收时 |
@@ -185,11 +188,9 @@ val in = parcel.readParcelable<ParcelFileDescriptor>(
 
 常见坑：
 
-* `MemoryFile.getFileDescriptor()` 的 fd 属于 `MemoryFile`，直接 `adoptFd` 会让两边都以为自己拥有它，关闭时 double close；用 `dup` 或 `fromFd` 复制一份。
-* fd 泄漏会耗尽进程 fd 配额（默认 1024/4096，视系统而定），用 `use {}` 或 `try/finally`。
-* 对端传来的 `size` 不可信，先 `Os.fstat(fd).st_size` 校验，再按协议解析。
-
-> `ParcelFileDescriptor` 传的是「打开文件描述」，不是路径；接收方拿到独立 fd，但共享同一个 file offset 和文件状态标志。
+* Java 的 `SharedMemory` 没有公开 `getFd()`，不要反射；要 PFD 就在 native 用 `ASharedMemory_dupFromJava`。
+* fd 泄漏会耗尽进程 fd 配额，用 `use {}` 或 `try/finally`；对端传来的 `size` 先用 `fstat` 校验。
+* `ParcelFileDescriptor` 传的是「打开文件描述」，接收方拿到独立 fd，但共享同一个 file offset 和文件状态标志。
 
 ## 10 Bitmap 共享内存与 HardwareBuffer
 
@@ -242,7 +243,7 @@ val bitmap = Bitmap.wrapHardwareBuffer(buffer, ColorSpace.get(ColorSpace.Named.S
 两者底层都是 tmpfs/shmem 文件，差别在封装：ashmem 是 Android 私有驱动，提供命名、按区间 pin/unpin、保护位 ioctl；memfd 是 Linux 通用系统调用，返回匿名文件 fd，支持 `F_ADD_SEALS` 封印。换 memfd 是为了去掉树外驱动、适配 GKI、减小攻击面，代价是失去按区间回收能力。
 
 ### Q3：MemoryFile 和 SharedMemory 怎么选？
-新代码优先 `SharedMemory`（API 27）：直接 `ByteBuffer` 映射、可 `setProtect` 降权、本身可 Parcel。`MemoryFile` 是 API 1 的老接口，适合兼容旧代码和简单字节读写；两者最终都是 fd + mmap，性能上没有本质差别。
+新代码优先 `SharedMemory`（API 27）：直接 `ByteBuffer` 映射、可 `setProtect` 降权、本身可 Parcel。`MemoryFile` 是 API 1 的老接口，适合兼容旧代码和简单字节读写；两者最终都是 fd + mmap，但 `MemoryFile` 的 `readBytes`/`writeBytes` 多一层字节数组拷贝。
 
 ### Q4：传 fd 为什么不算拷贝？两个进程 mmap 为什么看到同一份数据？
 Binder 只把 fd 翻译成目标进程的一个新描述符，指向内核同一个 `struct file`，没有搬数据。两个进程各自 `mmap(MAP_SHARED)` 同一文件时，页表映射到同一批物理页，所以一边写完另一边能看见；但「能看见」不等于「同步好」，仍需 barrier/锁/futex 保证顺序。
