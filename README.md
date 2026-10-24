@@ -145,9 +145,19 @@
 
 ### :yin_yang: C/C++/Linux/Dart
 * [C 与 Linux 学习路线](C/000.目录.md)
-* [C基础](C/C基础.md)
+* C 语言
+  * [C基础](C/C基础.md)
+  * [C详解](C/C详解.md)
+  * [C面试题](C/C面试题.md)
+  * [C标准库速查](C/C标准库速查.md)
+* Linux
+  * [Linux基础](C/Linux基础.md)
+  * [Linux常用命令](C/Linux常用命令.md)
+  * [Linux详解](C/Linux详解.md)
+  * [Linux Shell脚本](C/Linux%20Shell脚本.md)
+  * [Linux性能排查](C/Linux性能排查.md)
+  * [Linux面试题](C/Linux面试题.md)
 * [C++基础](C++/C++基础.md)
-* [Linux基础](C/Linux基础.md)
 * [Dart基础](Flutter/Dart/Dart语言.md)
 * [Flutter 实战](Flutter/Flutter实战/Flutter实战.md)
 

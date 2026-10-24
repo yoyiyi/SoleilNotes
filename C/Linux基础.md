@@ -1,142 +1,325 @@
 # Linux 基础
 
-面试复习向笔记，按「目录 → 权限 → 命令 → 用户 → 进程 → 启动 → 存储 → 网络 → 包管理 → 脚本 → 排查 → 容器」组织；默认值随发行版与版本变化，以发行版文档为准。
+面向刚接触服务器的读者：讲清 Linux 是什么、怎么登录、目录怎么组织、权限怎么理解、用户怎么管，最后落到装软件、查文档和常见坑。默认值随发行版与版本变化，以发行版文档为准。
 
-## 1 目录结构与 FHS
+## 1 Linux 是什么
 
-Linux 只有一个根目录 `/`，各目录职责由 FHS 规划；「一切皆文件」，设备与内核状态也以文件形式暴露。
+### 1.1 内核与发行版
+
+- **内核（kernel）**：唯一直接管硬件的部分，负责进程调度、内存管理、文件系统、网络协议栈与设备驱动；它只提供系统调用，不提供 `ls`、`apt` 这类工具。
+- **发行版（distribution）**：内核 + GNU 用户态工具（bash、coreutils）+ 包管理器 + init（现在多为 systemd）+ 默认配置与安全策略，打包成可安装的镜像。
+
+日常说的「装个 Linux」指的是装发行版，严格意义上的 Linux 只是内核。主流发行版分两大类：Debian 系用 `apt` + `.deb`，RHEL 系用 `dnf` + `.rpm`。
+
+| 发行版 | 包管理器 / 包格式 | 特点 |
+| --- | --- | --- |
+| Debian / Ubuntu | `apt` / `.deb` | 社区驱动、文档多；Ubuntu 每 6 个月一版，每两年一个 LTS，云主机与桌面最常见 |
+| RHEL / CentOS / Fedora | `dnf`（旧 `yum`）/ `.rpm` | 企业向，RHEL 生命周期约 10 年；CentOS 已转向 Stream；Fedora 是新特性试验田 |
+| Arch Linux | `pacman` / `.pkg.tar.zst` | 滚动更新、软件最新，装系统要自己配，适合学习不适合当稳定服务器 |
+| Alpine | `apk` / `.apk` | musl libc + BusyBox，镜像只有几 MB，容器基础镜像常用；部分 glibc 程序要额外兼容层 |
+
+选型建议：生产服务器优先 Ubuntu LTS、Debian stable 或 RHEL；容器镜像优先 Alpine；想追新、愿意自己修系统再用 Arch。
+
+### 1.2 内核版本号怎么看
+
+```bash
+uname -r               # 5.15.0-91-generic：内核版本，脚本里最常用
+uname -a               # 内核版本 + 主机名 + 架构 + 编译时间
+uname -m               # x86_64 / aarch64，下载软件包时看它
+cat /etc/os-release    # 发行版名称与版本，比 lsb_release 更通用
+```
+
+`5.15.0-91-generic` 逐段拆开：
+
+| 片段 | 含义 |
+| --- | --- |
+| `5` | 主版本，大版本升级可能带来不兼容 |
+| `15` | 次版本；3.0 之前偶数表示稳定版、奇数表示开发版，现在不再严格区分 |
+| `0` | 修订号，同一版本内的 bug 与安全修复 |
+| `-91-generic` | 发行版自己的补丁与 ABI 编号；`-generic` 是 Ubuntu 通用内核，还有 `-aws`、`-lowlatency` 等变体 |
+
+### 1.3 LTS
+
+- **LTS（Long Term Support）**：长期支持版本，只修 bug 与安全漏洞，不引入新特性。
+- Ubuntu LTS（20.04、22.04、24.04）服务器版标准支持 5 年，可付费延长 ESM；Debian stable 约 2 年一版，再加约 5 年 LTS；RHEL 每个大版本约 10 年。
+- 内核也有 LTS 分支：4.19、5.4、5.10、5.15、6.1、6.6 等，通常维护 2 年以上。
+- 生产环境优先选 LTS：升级窗口可控、遇到问题搜得到答案；滚动发行版不适合要求稳定的服务器。
+
+## 2 登录与第一个终端
+
+### 2.1 本地登录与虚拟终端
+
+服务器装好系统后，本机可用虚拟终端：`Ctrl+Alt+F1`~`F6` 切到 tty，`Ctrl+Alt+F7`（部分发行版是 F1/F2）回图形界面。输入用户名密码后得到 shell，看到提示符即登录成功。
+
+```bash
+tty             # 显示当前终端设备，如 /dev/pts/0
+who             # 谁登录了、从哪个终端或地址、何时登录
+w               # 比 who 多一列：当前在跑什么命令
+exit            # 退出登录，Ctrl-D 等效
+```
+
+### 2.2 SSH 远程登录
+
+```bash
+ssh alice@192.168.1.10                    # 用密码登录远程主机
+ssh -p 2222 alice@192.168.1.10            # 服务端改了端口时用 -p
+ssh-keygen -t ed25519 -C "alice@web01"    # 生成密钥对，默认放 ~/.ssh
+ssh-copy-id alice@192.168.1.10            # 把公钥追加到对方 ~/.ssh/authorized_keys
+```
+
+- 首次连接会显示主机指纹，确认后写入 `~/.ssh/known_hosts`；指纹突然变化，要么换了机器，要么是中间人，先别输密码。
+- 私钥权限必须是 `600`，`~/.ssh` 目录是 `700`，权限过宽 ssh 会拒绝使用。
+- 服务端配置在 `/etc/ssh/sshd_config`：`PermitRootLogin no`、`PasswordAuthentication no`；改端口后记得放行防火墙并 `systemctl reload sshd`。
+
+### 2.3 提示符在说什么
+
+`alice@web01:/var/log$` 由 `PS1` 决定：
+
+| 片段 | 含义 |
+| --- | --- |
+| `alice` | 当前用户名，对应 `whoami` |
+| `web01` | 主机名，`hostname` 可查可改 |
+| `/var/log` | 当前工作目录，家目录会显示成 `~` |
+| `$` | 普通用户；是 `#` 就说明当前是 root |
+
+```bash
+echo $PS1              # 默认大致是 \u@\h:\w\$
+PS1='\u@\h:\w\$ '      # 临时改提示符，写进 ~/.bashrc 可长期生效
+```
+
+`\u` 用户名、`\h` 短主机名、`\w` 完整路径（`\W` 只显示最后一段）、`\$` 根据 UID 自动切 `$` 与 `#`。
+
+### 2.4 root 与 sudo 的区别
+
+| | 直接使用 root | 使用 sudo |
+| --- | --- | --- |
+| 权限 | UID 0，绕过所有权限检查 | 按 sudoers 授权，通常可执行任意命令 |
+| 审计 | 操作全记在 root 名下，分不清是谁 | 记录「谁、在哪、执行了什么」 |
+| 风险 | 一条手滑的 `rm -rf` 直接毁系统 | 仍会出事，但至少有一次显式提权动作 |
+| 口令 | 需要知道 root 密码 | 用自己的密码，可免密，也可只放开几条命令 |
+
+```bash
+su -                            # 切到 root 并加载 root 的登录环境，需要 root 密码
+sudo -i                         # 用 sudo 起一个 root 登录 shell
+sudo -l                         # 看自己被允许执行哪些命令
+sudo systemctl restart nginx    # 单条命令提权，日常最常用的姿势
+```
+
+- `su -` 与 `su` 的差别在是否加载目标用户环境：带 `-` 才读 `/etc/profile` 与目标用户 profile，`PATH` 才是对的。
+- Ubuntu 默认锁住 root 密码（`/etc/shadow` 里是 `!`），只能走 sudo；Debian 安装时会让你设 root 密码。
+- 生产建议：禁止 root 直接 SSH 登录，日常用普通用户 + sudo，需要连续多条命令时再 `sudo -i`。
+
+## 3 目录结构 FHS
+
+Linux 只有一个根 `/`，没有 C:、D: 盘符，所有分区都挂到根下某个目录。目录职责由 **FHS（Filesystem Hierarchy Standard）** 约定，各发行版大体一致。另一个要建立的概念是「一切皆文件」：设备、内核参数、进程状态都以文件暴露，`cat`、`echo` 就能读写。
 
 ![](../asset/linux目录结构.jpg)
 
-### 1.1 常见目录职责
-| 目录 | 职责 | 备注 |
+### 3.1 各目录职责
+
+| 目录 | 职责 | 备注与示例 |
 | --- | --- | --- |
+| `/etc` | 全系统配置文件 | `my.cnf`、`/etc/fstab`、`/etc/passwd`、`/etc/ssh/sshd_config` |
+| `/var` | 经常变化的数据 | 日志 `/var/log`、包与状态 `/var/lib`、缓存 `/var/cache` |
+| `/usr` | 用户态程序与只读数据 | 类似 Program Files；`/usr/bin`、`/usr/lib`、`/usr/share`，`/usr/local` 放源码编译软件 |
+| `/home` | 普通用户主目录 | `/home/alice`，登录后的默认位置 |
+| `/root` | root 的主目录 | 不在 `/home` 下，权限 `700` |
+| `/tmp` | 临时文件 | 全局可写并带 Sticky 位，重启或定时任务可能清理 |
+| `/proc` | 内核与进程状态的虚拟文件系统 | `/proc/cpuinfo`、`/proc/meminfo`、`/proc/<pid>/status`，不占磁盘 |
+| `/sys` | 设备与内核对象的虚拟文件系统 | `/sys/class/net`、`/sys/fs/cgroup`，调内核参数用 |
+| `/dev` | 设备文件 | `/dev/sda`、`/dev/nvme0n1`、`/dev/null` |
+| `/mnt` | 手动临时挂载点 | `mount /dev/sdb1 /mnt` |
+| `/opt` | 额外安装的第三方大型软件 | 如 Oracle，通常为空；整套产品放这里 |
+| `/boot` | 内核与引导文件 | `vmlinuz`、`initramfs`、GRUB 配置，常单独分区 |
+| `/srv` | 服务数据 | 网站、FTP 等对外服务的数据目录 |
+| `/run` | 运行时状态 | 重启清空，`/run/nginx.pid`、`/run/systemd` |
 | `/bin`、`/sbin` | 基础命令 / 系统管理命令 | `sbin` = system binaries；现代发行版多是指向 `/usr/bin`、`/usr/sbin` 的软链接 |
 | `/lib`、`/lib64` | 基础命令与开机依赖的共享库 | 类似 Windows 的 DLL |
-| `/etc` | 全系统配置文件 | 如 `my.cnf`、`/etc/fstab`、`/etc/passwd` |
-| `/usr` | 用户态程序与只读数据 | 类似 Program Files；`/usr/local` 放源码编译软件 |
-| `/opt` | 额外安装的第三方大型软件 | 如 Oracle，通常为空 |
-| `/home`、`/root` | 普通用户主目录 / root 主目录 | root 不在 `/home` 下 |
-| `/boot` | 内核与引导文件 | `vmlinuz`、`initramfs`、GRUB 配置 |
-| `/dev` | 设备文件 | 类似设备管理器，如 `sda`、`nvme0n1` |
-| `/proc` | 虚拟文件系统，暴露内核与进程状态 | 不占磁盘，见 5.5 |
-| `/var` | 经常变化的数据 | 日志 `/var/log`、`/var/lib` |
-| `/tmp` | 临时文件 | 全局可写并带 Sticky 位，可能被清理 |
-| `/media`、`/mnt` | 可移动设备自动挂载 / 手动临时挂载 | `mount /dev/sdb1 /mnt` |
+| `/media` | 可移动设备自动挂载 | 插 U 盘后出现在 `/media/alice/...` |
 | `/lost+found` | ext 系 fsck 恢复的碎片文件 | 仅 ext2/3/4 有，XFS 没有 |
-| `/selinux` | SELinux 相关 | 强制访问控制，限制进程只能访问特定文件 |
+| `/selinux` | SELinux 伪文件系统 | 启用 SELinux 时才挂载，`getenforce` 看状态 |
 
-### 1.2 易混点
-- `/bin`、`/sbin`、`/lib` 与 `/usr/bin`、`/usr/sbin`、`/usr/lib` 在现代发行版多为软链接合并（merged `/usr`），`ls -l /` 可看出。
-- `/opt` 放整套第三方产品，`/usr/local` 放源码编译软件，`/srv` 放服务数据。
-- 文件类型看 `ls -l` 首位：`-` 普通文件、`d` 目录、`l` 软链接、`c` 字符设备、`b` 块设备、`s` 套接字、`p` 命名管道。
-- `/proc`、`/sys`、`/dev`、`/run` 都是内存中的虚拟文件系统，重启不保留。
+### 3.2 易混点
 
-## 2 文件与权限
+- `/bin`、`/sbin`、`/lib` 在现代发行版多是与 `/usr/bin`、`/usr/sbin`、`/usr/lib` 合并的软链接（merged `/usr`），`ls -l /` 一看便知。
+- `/opt` 放整套第三方产品，`/usr/local` 放源码编译软件，`/srv` 放服务数据，三者不要混用。
+- `/proc`、`/sys`、`/dev`、`/run` 都是内存中的虚拟文件系统，重启不保留，别往里放需要持久化的数据。
+- `/media` 是自动挂载，`/mnt` 是手动临时挂载；长期使用的数据盘建议在 `/etc/fstab` 里挂到 `/data` 这类明确目录。
+- 根分区被日志撑满是常见故障，把 `/var` 或 `/var/log` 单独分区能避免整个系统写不进去。
 
-### 2.1 rwx 的含义
-`ls -l` 输出 `-rwxr-xr-- 1 alice dev 1024 app.sh`：首位是文件类型，其后 9 位按「属主 / 属组 / 其他人」各 3 位。
+## 4 文件类型与路径
+
+### 4.1 七种文件类型
+
+`ls -l` 输出的第一位就是类型：
+
+| 字符 | 类型 | 例子 |
+| --- | --- | --- |
+| `-` | 普通文件 | `/etc/passwd`、脚本、ELF 二进制 |
+| `d` | 目录 | `/etc`、`/var/log` |
+| `l` | 符号链接 | `/usr/bin/awk -> /etc/alternatives/awk` |
+| `c` | 字符设备 | `/dev/null`、`/dev/tty` |
+| `b` | 块设备 | `/dev/sda`、`/dev/nvme0n1` |
+| `s` | 套接字 | `/run/mysqld/mysqld.sock` |
+| `p` | 命名管道 | `mkfifo /tmp/pipe` 创建 |
+
+```bash
+ls -l /dev/null         # crw-rw-rw- ...，第一位 c 说明是字符设备
+file /bin/ls            # ELF 64-bit LSB executable，判断真实类型而不是看扩展名
+stat /etc/passwd        # inode、权限、atime/mtime/ctime 三个时间戳
+```
+
+### 4.2 绝对路径与相对路径
+
+- 绝对路径从 `/` 开始，与当前位置无关：`/var/log/nginx/error.log`。
+- 相对路径从当前目录算起：`logs/error.log`、`../conf/nginx.conf`。
+
+```bash
+pwd                                  # 打印当前目录的绝对路径
+cd /var/log                          # 绝对路径切换
+cd ../..                             # 相对路径：上两级
+cd ~                                 # 回家目录，cd 不带参数等价
+cd -                                 # 回上一个目录，并把路径打印出来
+basename /var/log/nginx/error.log    # error.log
+dirname  /var/log/nginx/error.log    # /var/log/nginx
+```
+
+- `.` 当前目录、`..` 上级目录、`~` 当前用户家目录、`~alice` alice 的家目录。
+- 脚本里用相对路径会随「从哪执行」而变，稳妥做法是先 `cd "$(dirname "$0")"`，或全部用绝对路径。
+
+### 4.3 文件名规则
+
+- 大小写敏感：`File.txt`、`file.txt`、`FILE.TXT` 是三个文件；从 Windows 或默认不敏感的 macOS 迁过来最容易踩。
+- 以 `.` 开头是隐藏文件，`ls -a` 才看得到，`~/.bashrc`、`~/.ssh` 都是。
+- 扩展名只是给人看的约定，内核不看；`file` 才是判断真实类型的工具，`chmod +x` 后没有扩展名的脚本一样能跑。
+- 避免空格、中文、`$`、`&`、`;`、`*` 等字符；必须用时加引号 `"my file.txt"` 或转义 `my\ file.txt`。
+
+## 5 权限基础
+
+### 5.1 读一行 ls -l
+
+`-rwxr-xr-- 1 alice dev 1024 app.sh`
+
+| 字段 | 含义 |
+| --- | --- |
+| `-` | 文件类型，见 4.1 |
+| `rwx` | 属主 alice 的权限 |
+| `r-x` | 属组 dev 的权限 |
+| `r--` | 其他人的权限 |
+| `1` | 硬链接数；目录这里是 2 + 子目录数 |
+| `alice` | 属主（owner） |
+| `dev` | 属组（group） |
+| `1024` | 大小（字节），`ls -lh` 显示为 1.0K |
+| `app.sh` | 文件名 |
+
+### 5.2 rwx 对文件与目录的不同含义
 
 | 权限 | 对文件 | 对目录 |
 | --- | --- | --- |
-| `r` | 读取内容 | 列出目录内文件名（`ls`） |
+| `r` | 读取内容 | 列出目录内的文件名（`ls`） |
 | `w` | 修改内容 | 在目录内创建、删除、改名文件 |
 | `x` | 执行（程序/脚本） | 进入目录（`cd`） |
 
-### 2.2 chmod 与 chown
+- 目录只有 `r` 没有 `x`：`ls` 能看到名字，但 `ls -l`、`stat` 取不到详情，会报 Permission denied。
+- 删除文件看的是所在目录的 `w` 与 `x`，与文件自己是不是 `444` 无关；`/tmp` 靠 Sticky 位挡住「删别人的文件」。
+
+### 5.3 chmod：数字法与符号法
+
 ```bash
-chmod 755 run.sh         # 数字法 r=4 w=2 x=1，rwxr-xr-x
-chmod u+x run.sh         # 符号法 u/g/o/a + +/-/= + rwx
-chown alice:dev file     # 同时改属主和属组
-chown -R www-data:www-data /var/www
+chmod 755 run.sh            # 数字法：r=4 w=2 x=1，得到 rwxr-xr-x
+chmod 644 notes.txt         # rw-r--r--，普通文件默认
+chmod u+x run.sh            # 符号法：u/g/o/a + +/-/= + rwx
+chmod u+x,g-w,o=r run.sh    # 逗号分隔多条规则
+chmod -R 750 /data/app      # 递归修改目录及其内容
 ```
 
-### 2.3 umask
-文件基准 `666`、目录基准 `777`，`umask` 是「被屏蔽的位」，实际权限 = 基准 & ~umask；`umask 022` → 文件 `644`、目录 `755`，`027` → `640`、`750`。长期生效写入 `/etc/profile` 或 `~/.bashrc`。
+| 数字 | 权限 | 典型用途 |
+| --- | --- | --- |
+| 644 | rw-r--r-- | 普通文件、配置文件 |
+| 600 | rw------- | 私钥、含密码的配置 |
+| 755 | rwxr-xr-x | 目录、可执行程序 |
+| 700 | rwx------ | 私有目录，如 `~/.ssh` |
+| 775 | rwxrwxr-x | 组内协作目录 |
+| 777 | rwxrwxrwx | 不要用，任何用户都能改 |
 
-### 2.4 SUID / SGID / Sticky
+- `chmod +x` 不写 `who` 时默认对 `a` 生效，但会受 `umask` 影响；脚本里建议写全数字。
+- 目录要能被「进入」必须有 `x`，所以给目录加权限时 `r` 和 `x` 一般成对出现。
+
+### 5.4 chown 与 chgrp
+
+```bash
+chown alice:dev file                    # 同时改属主与属组
+chown -R www-data:www-data /var/www     # 递归改，Web 目录最常见
+chown alice file                        # 只改属主，属组不动
+chgrp dev file                          # 只改属组
+```
+
+- 只有 root 能把文件「送」给别人；普通用户只能把自己的文件改到自己所属的组。
+- `-R` 递归不要对 `/`、`/usr` 这类系统目录随手执行，会破坏 SUID 与系统文件属主。
+
+### 5.5 umask
+
+文件基准 `666`、目录基准 `777`，`umask` 是「要屏蔽掉的位」，实际权限 = 基准 & ~umask。
+
+```bash
+umask           # 查看当前值，常见 0022
+umask 027       # 临时改成 027：新建文件 640、新建目录 750
+umask -S        # 用 rwx 形式显示，0022 时输出 u=rwx,g=rx,o=rx
+```
+
+| umask | 新建文件 | 新建目录 | 场景 |
+| --- | --- | --- | --- |
+| 022 | 644 | 755 | 默认，同组可读 |
+| 027 | 640 | 750 | 生产常用，其他人无权限 |
+| 077 | 600 | 700 | 私有，只有自己能访问 |
+
+- 长期生效写进 `/etc/profile`（全局）或 `~/.bashrc`（当前用户）。
+- 目录还需要 `x` 才能进入，所以 `umask 027` 下目录是 `750` 而不是 `640`。
+
+### 5.6 SUID / SGID / Sticky
+
 | 特殊位 | 数字 | 作用 | 例子 |
 | --- | --- | --- | --- |
 | SUID | 4755 | 以文件属主身份运行 | `/usr/bin/passwd` |
-| SGID | 2755 | 文件按属组运行；目录内新建文件继承目录属组 | 协作目录 |
+| SGID | 2755 | 文件按属组运行；目录内新建文件继承目录的属组 | 组协作目录 |
 | Sticky | 1775 | 目录内文件只有属主或 root 能删 | `/tmp` |
 
-`ls -l` 中显示为 `s`/`S`（无 `x` 时大写）与 `t`/`T`；SUID 是最常见提权面，审计用 `find / -perm -4000 -type f 2>/dev/null`。
-
-### 2.5 ACL
-标准权限只能一个属主、一个属组，ACL 可给任意用户或组单独授权，`ls -l` 权限位末尾的 `+` 表示存在 ACL。
-
 ```bash
-setfacl -m u:alice:rw file     # 给用户授权
-setfacl -m g:dev:rx -R /data   # 递归给组
-getfacl file                   # 查看 ACL
+ls -l /usr/bin/passwd                     # -rwsr-xr-x，属主位的 s 就是 SUID
+find / -perm -4000 -type f 2>/dev/null    # 审计全系统 SUID 程序
 ```
 
-ext4 现代内核默认启用 ACL，XFS 默认支持；老系统要在挂载参数里加 `acl`。
+- 显示为 `s`/`S`（没有 `x` 时是大写 `S`）与 `t`/`T`；大写表示对应的 `x` 位没开，特殊位形同虚设。
+- SUID 是最常见的提权面：SUID 程序一旦有命令注入或缓冲区溢出，攻击者就能拿到属主（常为 root）权限，定期用上面的 `find` 审计。
 
-## 3 常用命令
+### 5.7 ACL（了解）
 
-### 3.1 文件与目录
-| 命令 | 作用 | 常用参数 |
-| --- | --- | --- |
-| `ls` | 列目录 | `-l` 详情、`-a` 含隐藏、`-h` 人类可读、`-d` 看目录本身、`-t` 按时间 |
-| `cd` / `pwd` | 切换 / 显示当前目录 | `cd -` 回上一个目录 |
-| `mkdir` / `rmdir` | 建目录 / 删空目录 | `-p` 递归创建 |
-| `cp` / `mv` | 复制 / 移动重命名 | `-r` 目录、`-p` 保留属性、`-a` 归档；同分区 `mv` 只改目录项 |
-| `rm` | 删除 | `-r` 递归、`-f` 强制；**没有回收站** |
-| `less` / `tail` | 分页查看 / 看末尾 | `less` 内 `/` 搜索、`q` 退出；`tail -f` 跟踪追加 |
-| `stat` / `file` | 看 inode 与时间戳 / 判断真实类型 | atime 访问、mtime 内容修改、ctime 元数据修改 |
+标准权限只能有一个属主、一个属组；ACL 可以给任意用户或组单独授权，`ls -l` 权限位末尾出现 `+` 就说明存在 ACL。
 
-### 3.2 文本处理
-| 命令 | 作用 | 要点 |
-| --- | --- | --- |
-| `grep` | 按行过滤 | `grep -in error app.log`；`-v` 反选、`-r` 递归、`-E` 扩展正则、`-A/-B/-C` 上下文 |
-| `sed` | 流式编辑 | `sed -i 's/old/new/g' f`、`sed -n '10,20p' f`、`sed '/debug/d' f` |
-| `awk` | 按列处理 | `awk -F: '{print $1}' /etc/passwd`；`$NF` 最后一列、`NR` 行号 |
-| `cut` | 截取列或字符 | `cut -d: -f1,3 /etc/passwd`、`cut -c1-8 f` |
-| `sort` | 排序 | `-n` 数值、`-r` 逆序、`-k2` 指定列、`-t:` 分隔符、`-u` 去重 |
-| `uniq` | 相邻去重（须先 sort） | `-c` 计数、`-d` 只看重复行 |
+```bash
+setfacl -m u:alice:rw file        # 给用户 alice 单独读写
+setfacl -m g:dev:rx -R /data      # 递归给组 dev 读 + 进入
+getfacl file                      # 查看 ACL 规则
+```
 
-### 3.3 查找
-| 命令 | 范围 | 示例 |
-| --- | --- | --- |
-| `find` | 实时遍历目录树 | `find /var/log -name "*.log" -mtime -7 -size +100M` |
-| `locate` | 预建数据库 | 快但可能过期，需 `updatedb` |
-| `which` / `whereis` | `PATH` / 标准目录 | 确认实际调用的是哪个命令 |
+ext4 现代内核默认启用 ACL，XFS 默认支持；很老的系统才需要在挂载参数里加 `acl`。
 
-### 3.4 压缩与打包
-| 命令 | 说明 |
-| --- | --- |
-| `tar` | 打包并可压缩：`-z` gzip、`-j` bzip2、`-J` xz；`tar -czf a.tar.gz dir`、`tar -xzf a.tar.gz -C /opt`、`tar -tzf a.tar.gz` 只看内容 |
-| `gzip` / `gunzip` | 单文件压缩，`-k` 保留原文件、`-9` 最高压缩比，`zcat` 直接看内容 |
-| `xz` | 压缩比高、更耗 CPU，常用于镜像与源码包 |
-| `zip` / `unzip` | 与 Windows 交换方便：`zip -r a.zip dir`、`unzip -d /opt a.zip` |
+### 5.8 权限判定顺序
 
-### 3.5 进程
-| 命令 | 作用 |
-| --- | --- |
-| `ps aux` / `ps -ef` | 快照查看（BSD / System V 两种风格） |
-| `top` / `htop` | 实时查看，`htop` 支持鼠标与树形 |
-| `kill` / `pkill` / `jobs` | 发信号、按名字杀、作业控制（见第 5 章） |
+1. 当前用户 UID 等于文件属主 → 只适用属主那三位，不再看组和其他。
+2. 否则用户属于文件属组（含附加组）→ 只适用属组那三位。
+3. 否则适用其他人那三位。
 
-### 3.6 网络
-| 命令 | 作用 |
-| --- | --- |
-| `ip addr` / `ip route` | 查地址与路由，取代 `ifconfig`、`route` |
-| `ss -tulnp` | 查监听端口与进程，取代 `netstat` |
-| `ping` / `traceroute` / `mtr` / `dig` | 连通性、路径、逐跳质量、DNS |
+- root 例外：读写不受权限位限制，但执行仍要求至少有一个 `x` 位，否则一样 Permission denied。
+- 权限只匹配一次：属主位是 `---` 时，即使属组位给了 `rwx`，属主本人也没有权限。
 
-### 3.7 磁盘
-| 命令 | 作用 |
-| --- | --- |
-| `df -h` / `df -i` | 容量与 inode 使用率 |
-| `du -sh *` | 当前目录各子项占用 |
-| `lsblk -f` / `blkid` | 块设备树、文件系统、UUID |
+## 6 用户与组
 
-## 4 用户与组
+Linux 的权限围绕「用户 UID + 组 GID」展开，`id` 是查看这一切最快的方式。
 
-### 4.1 /etc/passwd 字段
-示例 `alice:x:1000:1000:Alice:/home/alice:/bin/bash`，7 个冒号分隔字段。
+### 6.1 /etc/passwd 的七个字段
+
+示例 `alice:x:1000:1000:Alice:/home/alice:/bin/bash`，7 个冒号分隔字段：
 
 | 字段 | 含义 |
 | --- | --- |
@@ -148,193 +331,123 @@ ext4 现代内核默认启用 ACL，XFS 默认支持；老系统要在挂载参�
 | 主目录 | 登录后的家目录 |
 | 登录 shell | `/sbin/nologin` 表示禁止登录 |
 
-`/etc/group` 存组与成员，`/etc/skel` 是新用户家目录模板。
+补充：UID `1`~`999` 通常留给系统用户；改 UID 用 `usermod -u`，别忘了同步改家目录属主。
 
-### 4.2 用户与组管理
-```bash
-useradd -m -s /bin/bash -G dev,sudo alice   # -m 建家目录，-G 附加组
-usermod -aG docker alice                    # 追加组；漏 -a 会覆盖原有附加组
-passwd alice                                # root 改他人密码；passwd 改自己
-```
+### 6.2 /etc/shadow 与 /etc/group
 
-### 4.3 sudo
-用 `visudo` 编辑 `/etc/sudoers`（带语法检查，避免改坏后无法提权）。`alice ALL=(ALL) NOPASSWD: ALL` 是免密全权，`%wheel`、`%sudo` 是组授权写法。sudo 会记录命令，比直接分发 root 密码更可审计。
+`/etc/shadow` 只有 root 可读，每行 9 个字段，例如 `alice:$6$...:19800:0:99999:7:::`：
 
-## 5 进程管理
-
-进程 = 程序 + 运行上下文，有 PID、PPID、状态、优先级与地址空间；PID 1 是 init/systemd，是所有用户态进程的祖先。
-
-### 5.1 ps、top 与 htop
-```bash
-ps aux                                   # BSD 风格，含 %CPU、%MEM
-ps -ef                                   # System V 风格，含 PPID
-```
-
-状态位：`R` 运行、`S` 可中断睡眠、`D` 不可中断睡眠（多在等 IO）、`T` 停止、`Z` 僵尸、`I` 空闲内核线程。`top` 交互键：`P` 按 CPU、`M` 按内存、`1` 展开各核、`c` 完整命令行、`H` 线程视图、`k` 发信号。
-
-### 5.2 信号与 kill
-| 信号 | 编号 | 含义 |
-| --- | --- | --- |
-| SIGHUP | 1 | 挂断，守护进程常用来触发重载配置 |
-| SIGKILL | 9 | 强制杀死，不可捕获、不可忽略 |
-| SIGTERM | 15 | 默认终止信号，可捕获以优雅退出 |
-| SIGSTOP / SIGCONT | 19 / 18 | 暂停 / 继续，不可捕获 |
-
-```bash
-kill -15 1234           # 先请求优雅退出
-kill -9 1234            # 再强制杀死，可能丢数据
-```
-
-### 5.3 nice 与前后台作业
-`nice` 范围 `-20`（最高）到 `19`（最低），普通用户只能增大 nice 值（降优先级）。
-
-```bash
-nice -n 10 ./batch.sh    # 低优先级启动；renice -n 5 -p 1234 调整运行中的进程
-nohup ./svc.sh > svc.log 2>&1 &   # & 放后台，nohup 忽略 SIGHUP，退出终端仍存活
-jobs -l && fg %1         # 查看作业、调回前台；bg %1 让暂停的作业继续
-```
-
-### 5.4 僵尸进程与孤儿进程
-| | 僵尸进程 | 孤儿进程 |
-| --- | --- | --- |
-| 成因 | 子进程已退出，父进程未 `wait()` 回收 | 父进程先退出 |
-| 状态 | `Z`，内存已释放，仅剩 PID 与退出码 | 仍在运行，被 PID 1（或 subreaper）收养 |
-| 处理 | 让父进程回收，或杀掉父进程使其被收养 | 通常无需处理 |
-
-### 5.5 /proc 常用文件
-| 路径 | 内容 |
+| 字段 | 含义 |
 | --- | --- |
-| `/proc/cpuinfo` / `/proc/meminfo` | CPU 型号核数 / 内存明细（MemTotal、MemAvailable） |
-| `/proc/loadavg` | 1/5/15 分钟负载与运行队列 |
-| `/proc/<pid>/status` | 进程状态、VmRSS、Threads |
-| `/proc/<pid>/fd/` | 打开的文件描述符，排查句柄泄漏 |
+| 用户名 | 与 `/etc/passwd` 对应 |
+| 密码哈希 | `$6$` 为 SHA-512，`$y$` 为 yescrypt；`!`、`*`、`!!` 表示锁定或未设密码 |
+| 最后修改 | 距 1970-01-01 的天数 |
+| 最小间隔 | 改密码后多少天内不能再改，`0` 表示不限 |
+| 最大有效 | 多少天后必须改，`99999` 表示永不 |
+| 警告 | 过期前几天开始提示 |
+| 宽限 | 过期后还能登录几天 |
+| 失效 | 账号作废日期（天数） |
+| 保留 | 未使用 |
 
-## 6 systemd
+`/etc/group` 每行是 `dev:x:1001:alice,bob`，即「组名:密码占位:GID:成员列表」，成员列表只列附加组，主组不在这里体现。
 
-systemd 是现代发行版主流的 init 与服务管理器，核心概念是 unit：服务、挂载点、定时器统一抽象。
+- 主组（primary group）：`/etc/passwd` 第 4 字段，新建文件默认属于它。
+- 附加组（supplementary group）：`/etc/group` 第 4 字段，用来获得额外权限，如 `sudo`、`docker`。
+- 新用户的家目录从 `/etc/skel` 复制（`.bashrc`、`.profile` 就在里面）；默认 shell、UID 范围由 `/etc/login.defs`、`/etc/default/useradd` 决定。
 
-### 6.1 unit 类型
-| 类型 | 用途 |
+### 6.3 用户与组管理命令
+
+```bash
+useradd -m -s /bin/bash -G dev,sudo alice  # 建用户：建家目录、指定 shell 与附加组
+usermod -aG docker alice                   # 追加附加组；漏 -a 会用 -G 覆盖原有附加组
+userdel -r alice                           # 删用户，并连带家目录与邮件
+passwd alice                               # root 改他人密码；不带参数改自己
+id alice                                   # UID、主组、附加组一次看全
+groups alice                               # 只看组名列表
+groupadd -g 1001 dev                       # 建组并指定 GID
+chage -l alice                             # 看密码与账号有效期
+```
+
+- Debian/Ubuntu 上 `adduser alice` 是交互式封装，自动建家目录、问密码，比 `useradd` 友好；写脚本仍用 `useradd`。
+- `usermod -aG` 之后要重新登录（或 `newgrp docker`）新组才在当前 shell 生效。
+- 删用户前先确认没有进程占用（`pgrep -u alice`），否则会留下属主为旧 UID 的孤儿文件。
+
+### 6.4 sudo 与 visudo
+
+```bash
+visudo          # 编辑 /etc/sudoers，保存时自动做语法检查
+visudo -c       # 只检查语法，不改文件
+sudo -l         # 当前用户被授予了哪些命令
+```
+
+`/etc/sudoers` 一行一条规则，格式是「谁 在哪台主机=(以谁的身份) 可执行的命令」：
+
+```text
+alice ALL=(ALL) NOPASSWD: ALL                        # 免密全权，方便但等于给了 root
+%wheel ALL=(ALL) ALL                                 # 组授权，RHEL 系；Debian 系组名是 %sudo
+alice ALL=(root) /usr/bin/systemctl restart nginx    # 只放开一条命令
+```
+
+- 永远用 `visudo` 改，写坏 `/etc/sudoers` 会导致所有人都无法提权，只能进单用户模式救。
+- 推荐在 `/etc/sudoers.d/` 下按用户建文件（权限 `440`），不要动主文件。
+- sudo 会记录命令，比直接分发 root 密码更可审计；`NOPASSWD` 只给确实需要的自动化账号。
+
+## 7 环境变量与 PATH
+
+### 7.1 变量与环境变量
+
+```bash
+NAME="app"              # 定义 shell 变量，等号两边不能有空格
+export NAME             # 导出为环境变量，子进程可见
+echo "$NAME"            # 取值，推荐加花括号：echo "${NAME}-1"
+printenv NAME           # 只打印环境变量，不存在时退出码非 0
+VAR=1 ./run.sh          # 只对这条命令生效，不污染当前 shell
+unset NAME              # 删除变量
+env                     # 列出所有环境变量
+```
+
+- 不加 `export` 的变量只存在于当前 shell，`bash -c 'echo $NAME'` 看不到。
+- 变量名区分大小写，环境变量习惯全大写；值里有空格必须加引号。
+
+### 7.2 PATH
+
+`PATH` 是冒号分隔的目录列表，输入命令时 shell 从左到右找第一个同名可执行文件。
+
+```bash
+echo $PATH                       # /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:...
+which nginx                      # 实际会执行哪个 nginx，找不到时返回非 0
+type -a python3                  # 所有同名命令：别名、函数、多个路径
+export PATH="$HOME/bin:$PATH"    # 临时把自己的脚本目录放到最前
+```
+
+- `which` 只看 `PATH`；`type` 还能识别别名、函数、内建命令，排查「为什么执行的不是我想的那个」用它。
+- 不要把 `.` 或当前目录放进 `PATH`：在别人目录里敲 `ls` 可能跑到恶意同名程序。
+- 长期生效写进 `~/.bashrc` 或 `/etc/profile.d/xxx.sh`，改完 `source` 一下。
+
+### 7.3 配置文件加载顺序
+
+| 场景 | 读取顺序（自上而下） |
 | --- | --- |
-| `.service` | 守护进程或一次性任务 |
-| `.target` | unit 集合，替代运行级别（`multi-user.target` ≈ runlevel 3） |
-| `.timer` | 定时触发，替代 cron |
-| `.socket` | 套接字激活，有连接才拉起服务 |
+| 登录 shell：tty 登录、`ssh host`、`su -` | `/etc/profile` → `/etc/profile.d/*.sh` → `~/.bash_profile` → `~/.bash_login` → `~/.profile`（后三个只读第一个存在的） |
+| 交互式非登录：图形终端新开窗口、直接敲 `bash` | `/etc/bash.bashrc`（Debian/Ubuntu）或 `/etc/bashrc`（RHEL） → `~/.bashrc` |
+| 非交互：执行脚本 | 不读上面这些，只读 `$BASH_ENV`（通常没设） |
 
-### 6.2 systemctl 常用命令
-```bash
-systemctl start|stop|restart|reload nginx
-systemctl status nginx
-systemctl enable --now nginx          # 开机自启并立即启动
-systemctl daemon-reload               # 改 unit 文件后必须执行
-```
+- 环境变量（`PATH`、`JAVA_HOME`）放 `/etc/profile.d/*.sh` 或 `~/.profile`；别名、提示符、补全放 `~/.bashrc`。
+- `su alice` 不读登录文件、保留原环境；`su - alice` 才是完整登录。sudo 执行命令默认也不读 `~/.bashrc`，脚本里别依赖它。
+- 改完用 `source ~/.bashrc` 立即生效，不必退出重登。
 
-### 6.3 写一个 service 文件
-放到 `/etc/systemd/system/myapp.service`（自建 unit 用此目录，别改 `/usr/lib/systemd/system` 下的发行版文件）：
+## 8 软件安装入门
 
-```ini
-[Unit]
-Description=My Demo Service
-After=network-online.target
+### 8.1 包管理器能做什么
 
-[Service]
-Type=simple
-User=appuser
-ExecStart=/opt/myapp/bin/start.sh
-Restart=on-failure
-[Install]
-WantedBy=multi-user.target
-```
+- 从配置好的仓库（`/etc/apt/sources.list*`、`/etc/yum.repos.d/*.repo`）下载包，并用 GPG 校验签名。
+- 自动解析并安装依赖，避免「缺一个 .so 就起不来」。
+- 把文件装到标准位置（`/usr/bin`、`/usr/lib`、`/etc`），并登记进本地数据库（Debian 是 `/var/lib/dpkg`，RHEL 是 `/var/lib/rpm`）。
+- 支持升级、卸载、按文件反查所属包、校验完整性。
+- 不管源码包和语言级包（`pip`、`npm`、`gem`），那是各自生态的包管理器。
 
-`Type=simple` 适合前台进程，传统守护进程用 `forking`；改完执行 `systemctl daemon-reload && systemctl enable --now myapp`。
+### 8.2 apt 与 dnf 对照
 
-### 6.4 journalctl
-```bash
-journalctl -u nginx -f                  # 跟踪某服务
-journalctl -b                           # 本次启动全部日志；-b -1 上次启动
-journalctl -u nginx --since "1 hour ago" -p err
-```
-
-## 7 磁盘与文件系统
-
-### 7.1 分区表：MBR 与 GPT
-| | MBR | GPT |
-| --- | --- | --- |
-| 最大磁盘 | 2 TB（32 位 LBA） | 约 9.4 ZB（64 位 LBA） |
-| 分区数 | 4 个主分区，或 3 主 + 1 扩展（扩展内再分逻辑分区） | 默认 128 个，Linux 可更多 |
-| 校验与备份 | 无，分区表损坏难恢复 | CRC32 校验，首尾各一份 |
-| 启动方式 | 传统 BIOS | UEFI（也可配 BIOS 使用） |
-
-早期「IDE 硬盘最多 59 个逻辑分区、SCSI 最多 11 个」源自老内核按设备号分配的限制，**现代内核已不再受此约束**，实际上限由分区表类型和工具决定。新盘直接用 GPT + `parted`/`gdisk`。
-
-### 7.2 常见文件系统
-| 文件系统 | 特点 | 现状 |
-| --- | --- | --- |
-| ext2 | 1993 年发布，无日志，断电易损坏 | 多用于 U 盘等小场景 |
-| ext3 | ext2 加日志，崩溃恢复更快 | 已被 ext4 取代 |
-| ext4 | 兼容 ext3，Extents、延迟分配、多块分配、快速 fsck、日志校验，支持 1 EiB 卷与 16 TiB 单文件 | Debian/Ubuntu 长期默认 |
-| XFS | 64 位、大文件与大并发友好、在线扩容；**不支持缩容** | RHEL/CentOS 7+ 默认 |
-| Btrfs | CoW、快照、子卷、内置 RAID 与压缩、数据校验 | SUSE 系默认，Fedora 工作站常用 |
-
-### 7.3 设备命名与 NVMe
-- SATA/SAS：`/dev/sda`，分区 `sda1`、`sda2`；NVMe：`/dev/nvme0n1`，分区是 `nvme0n1p1`（注意 `p`），高队列深度、低延迟，没有 IDE/SCSI 那套历史包袱。虚拟化磁盘为 `/dev/vda`、`/dev/xvda`。
-
-### 7.4 df / du / mount 与 fstab
-```bash
-df -h                  # 各文件系统容量；df -i 看 inode 使用率
-du -sh /var/log/*      # 各子项占用；du -h --max-depth=1 / | sort -h
-mount -o remount,rw /  # 只读根分区改回读写
-```
-
-`/etc/fstab` 每行六个字段：设备（建议写 UUID）→ 挂载点 → 文件系统类型 → 挂载选项 → dump 备份标志 → fsck 检查顺序（根 `/` 为 1，其他为 2，0 表示不检查），例：`UUID=xxxx / ext4 defaults 0 1`。改完先 `mount -a` 验证，改 unit 后 `systemctl daemon-reload`。
-
-### 7.5 inode
-inode 存文件元数据：类型、权限、属主、大小、时间戳、数据块指针、链接数，**不含文件名**；文件名在目录项里，目录项建立「名字 → inode 号」的映射。`stat file` 看 inode 号与链接数，`df -i` 看 inode 余量。
-
-ext4 的 inode 数在 `mkfs` 时固定（`-N`、`-i` 可调），XFS 动态分配。海量小文件会把 inode 用完，表现为「还有空间却建不了文件」，处理办法是清理小文件或重建文件系统。
-
-### 7.6 硬链接与软链接
-| 对比项 | 硬链接 | 软链接（符号链接） |
-| --- | --- | --- |
-| inode | 与原文件同一个 | 独立 inode，内容为目标路径 |
-| 跨文件系统 | 不可以 | 可以 |
-| 指向目录 | 一般不允许 | 可以 |
-| 原文件删除后 | 仍可访问，链接数减 1 | 变成悬挂链接（dangling） |
-
-## 8 网络
-
-### 8.1 ip 与 ss
-`netstat` 属于已停止维护的 net-tools，现代系统用 iproute2 的 `ip` 与 `ss` 取代。
-
-```bash
-ip -br a                         # 简洁查看所有网卡与地址
-ss -tulnp                        # 监听中的 TCP/UDP 端口与进程
-ss -tanp state established       # 已建立的连接；ss -s 看连接数汇总
-```
-
-### 8.2 连通性与 DNS
-| 命令 | 用途 |
-| --- | --- |
-| `ping -c4 host` | ICMP 连通性、丢包与 RTT |
-| `traceroute` / `mtr host` | 逐跳路径，`mtr` 持续统计更直观 |
-| `dig +short example.com` | 看 A 记录；`dig @8.8.8.8 example.com MX` 指定服务器与记录类型 |
-
-`curl -X POST -H 'Content-Type: application/json' -d '{"a":1}' http://127.0.0.1:8080/api`；`--resolve example.com:443:10.0.0.5` 可绕过 DNS 直连后端。
-
-### 8.3 防火墙
-`firewalld` 是 RHEL 系的动态防火墙前端，新版后端为 `nftables`（旧版为 `iptables`）。
-
-```bash
-firewall-cmd --permanent --add-service=http
-firewall-cmd --permanent --add-port=8080/tcp
-firewall-cmd --reload        # 永久规则需 reload 才生效
-```
-
-直接用 nftables：`nft list ruleset`、`nft add rule inet filter input tcp dport 8080 accept`，规则写入 `/etc/nftables.conf`。Debian/Ubuntu 上更常见 `ufw allow 22/tcp`；默认策略以发行版文档为准。
-
-## 9 软件包管理
-
-### 9.1 apt 与 dnf/yum 对照
 | 操作 | Debian/Ubuntu（apt/dpkg） | RHEL/CentOS/Fedora（dnf，旧为 yum） |
 | --- | --- | --- |
 | 更新索引 | `apt update` | `dnf makecache` |
@@ -345,205 +458,92 @@ firewall-cmd --reload        # 永久规则需 reload 才生效
 | 已安装列表 | `dpkg -l` | `rpm -qa` |
 | 文件属于哪个包 | `dpkg -S /usr/sbin/nginx` | `rpm -qf /usr/sbin/nginx` |
 
-`apt update` 只刷新索引、不升级软件，这点常被混淆。
+- `apt update` 只刷新索引、不升级软件，这点最常被混淆；升级要再执行 `apt upgrade`。
+- 装本地包：`apt install ./pkg.deb`、`dnf install ./pkg.rpm`；`dnf history` 可以回滚某次事务。
 
-### 9.2 源码编译三步
-```bash
-./configure --prefix=/usr/local/nginx   # 检查依赖、生成 Makefile
-make -j$(nproc)                         # 编译
-make install                            # 安装到 prefix
-```
-
-前提是装好工具链与开发库（Debian：`build-essential`；RHEL：`gcc`、`make`、`*-devel`）。`--prefix` 决定安装路径，默认 `/usr/local`；源码装的软件不受包管理器管理，升级卸载都要自己做。
-
-## 10 Shell 与脚本
-
-### 10.1 管道与重定向
-| 写法 | 含义 |
-| --- | --- |
-| `cmd > file` | 标准输出覆盖写入 |
-| `cmd >> file` | 标准输出追加 |
-| `cmd 2> err.log` | 标准错误写入文件 |
-| `cmd &> all.log` | stdout 与 stderr 一起写入（bash 专属） |
-| `cmd > out 2>&1` | 先重定向 stdout，再让 stderr 指向同一处 |
-| `cmd1 \| cmd2` | 管道：前者 stdout 作为后者 stdin |
-
-### 10.2 变量与流程控制
-```bash
-NAME="app"              # 等号两边不能有空格
-export NAME             # 导出为环境变量，子进程可见
-echo "${NAME}-1"        # 推荐加花括号
-```
+### 8.3 源码编译三步
 
 ```bash
-if [ -f /etc/passwd ]; then
-  echo exists
-else
-  echo missing
-fi
-
-for f in /var/log/*.log; do
-  wc -l "$f"
-done
+./configure --prefix=/usr/local/nginx    # 检查依赖与编译环境，生成 Makefile
+make -j"$(nproc)"                        # 编译，-j 用满所有核
+make install                             # 安装到 --prefix 指定的目录
 ```
 
-判断用 `[ ]`（POSIX）或 `[[ ]]`（bash，支持 `&&` 与正则）；脚本首行建议 `#!/usr/bin/env bash` 并加 `set -euo pipefail`。
+- 前提是装好工具链与开发库：Debian `apt install build-essential`，RHEL `dnf install gcc make`，报缺头文件时按名字装对应的 `-dev`/`-devel` 包。
+- `--prefix` 决定安装路径，默认 `/usr/local`；装完二进制在 `/usr/local/nginx/sbin`，不在 `PATH` 里就要写全路径或自己做软链。
+- 源码装的软件不受包管理器管理：升级要重新编译，卸载基本是 `rm -rf /usr/local/nginx`，装过什么只有自己记得。
+- 三条命令中任何一步失败都别硬往下走，`configure` 失败要读它最后几行，缺什么装什么。
 
-### 10.3 cron 与 systemd timer
-cron 五个字段 `分 时 日 月 周`：`0 3 * * *` 表示每天 3:00。
+### 8.4 装完怎么确认
 
 ```bash
-crontab -e     # 编辑当前用户任务；crontab -l 列出
+which nginx                 # 命令是否在 PATH 里
+nginx -v                    # 版本，确认装的是哪一个
+dpkg -S /usr/sbin/nginx     # Debian：这个文件属于哪个包
+rpm -qf /usr/sbin/nginx     # RHEL：同上
+dpkg -L nginx | head        # 列出这个包装了哪些文件
 ```
 
-`/etc/cron.d/` 下的文件需多一个用户字段，`/etc/cron.{hourly,daily}` 由 run-parts 执行。cron 环境变量少、`PATH` 短，脚本里要用绝对路径。systemd timer 更可控，日志进 journal 且支持错过后补跑：
+## 9 帮助与文档
 
-```ini
-[Timer]
-OnCalendar=*-*-* 03:00:00
-Persistent=true
+### 9.1 man
 
-[Install]
-WantedBy=timers.target
-```
-
-### 10.4 特殊变量与退出码
-| 变量 | 含义 |
-| --- | --- |
-| `$?` | 上一条命令退出码，`0` 为成功 |
-| `$$` | 当前 shell 的 PID |
-| `$!` | 最近一个后台进程的 PID |
-| `$0` / `$#` | 脚本名 / 参数个数 |
-| `$@` / `$*` | 参数列表，`"$@"` 保留参数边界，优先用它 |
-
-常见退出码：`1` 一般错误、`126` 无执行权限、`127` 命令未找到、`130` 被 Ctrl-C 中断、`137` 被 SIGKILL 杀死（128+9）。
-
-## 11 性能与排查
-
-| 工具 | 关注点 |
-| --- | --- |
-| `top` / `htop` | 整体 CPU、内存、负载与单进程占用 |
-| `vmstat 1` | `r` 运行队列、`b` 阻塞、`si/so` 换页、`us/sy/id/wa` |
-| `iostat -x 1` | 每块盘 `r/s`、`w/s`、`await`、`%util` |
-| `sar -u 1 5` | 历史与实时趋势，需 sysstat 采集 |
-| `free -h` | `available` 才是可用内存，`buff/cache` 可回收 |
-| `lsof -p PID` / `lsof -i:80` | 打开的文件、网络连接 |
-| `strace -f -p PID` / `strace -c cmd` | 系统调用跟踪与耗时统计 |
-| `perf top` / `perf record -g` | 采样剖析 CPU 热点，定位到函数 |
-
-- **CPU 高**：`top` 找进程 → `top -H -p PID` 找线程 → 线程 ID 转 16 进制去 `jstack` 查栈，或 `perf top` 看热点函数；`vmstat` 区分用户态忙还是 `wa` 高。
-- **内存涨**：`free -h` 看 available 是否真降，`ps -eo pid,rss,cmd --sort=-rss` 找大户，`/proc/PID/status`、`pmap -x PID` 看明细；`dmesg` 有 OOM killer 说明已触顶。
-- **IO 高**：`iostat -x 1` 看哪块盘 `%util` 接近 100、`await` 变大 → `iotop -o` 或 `pidstat -d` 找进程 → 再看是否日志刷盘、备份任务或 swap 抖动。
-- **端口占用**：`ss -tulnp | grep :8080`、`lsof -i:8080`、`fuser 8080/tcp`；TIME_WAIT 过多要看连接复用与内核参数。
-- **负载高但 CPU 不高**：load 包含 `D` 状态进程，多为 IO 或 NFS 卡住，用 `ps -eo stat,pid,cmd | grep '^D'` 定位。
-- **磁盘满**：`df -h` 找分区 → `du -h --max-depth=1` 逐层下钻 → 注意已删除仍被占用的文件（`lsof +L1`）与 inode（`df -i`）。
-
-## 12 容器基础
-
-容器不是「轻量虚拟机」，而是**被隔离并限制资源的一组普通进程**：namespace 管「看得见什么」，cgroup 管「能用多少」。
-
-### 12.1 namespace 与 cgroup
-| 机制 | 作用 | 内容 |
+| 章节 | 内容 | 例子 |
 | --- | --- | --- |
-| namespace | 隔离视图 | `pid` 进程号、`net` 网络栈、`mnt` 挂载点、`uts` 主机名、`ipc` 进程间通信、`user` UID 映射、`cgroup` 视图 |
-| cgroup | 限制资源 | CPU、内存、IO 带宽、进程数；v2 中为 `cpu.max`、`memory.max`、`pids.max` |
+| 1 | 用户命令 | `man ls` |
+| 2 | 系统调用 | `man 2 open` |
+| 3 | 库函数 | `man 3 malloc` |
+| 4 | 设备与特殊文件 | `man 4 null` |
+| 5 | 文件格式与配置 | `man 5 passwd`、`man 5 fstab` |
+| 7 | 杂项、协议、宏包 | `man 7 tcp` |
+| 8 | 系统管理命令 | `man 8 mount` |
 
 ```bash
-docker run --cpus=1.5 --memory=512m nginx
+man ls              # 看 ls 的完整手册
+man 5 passwd        # 指定章节：/etc/passwd 的格式，而不是 passwd 命令
+man -k password     # 按关键字搜索手册，等价于 apropos
 ```
 
-### 12.2 常用 docker 命令
+- 手册里 `/关键字` 搜索、`n` 跳下一个、`q` 退出；`man -k` 依赖索引，新系统可能要先跑一次 `mandb`。
+- 同名条目可能有多章，`man 5 passwd` 与 `man 1 passwd` 内容完全不同，这是新手最容易困惑的点。
+
+### 9.2 其他入口
+
 ```bash
-docker ps -a                       # 容器列表
-docker run -d --name web -p 8080:80 -v /data/html:/usr/share/nginx/html nginx
-docker exec -it web bash           # 进入运行中的容器
-docker logs -f --tail 100 web      # 看日志
-docker build -t myapp:1.0 .        # 构建镜像
+ls --help           # 大多数命令都支持，比 man 短，先看这个最快
+help cd             # bash 内建命令（cd、export）没有 man 页，用 help
+info coreutils      # GNU 项目的 info 文档，比 man 更详细
+tldr tar            # 社区示例集，需先安装（apt install tldr），只给常用例子
 ```
 
-`-p 8080:80` 是「宿主机端口:容器端口」，`-v` 挂数据卷，`--restart=always` 控制重启策略。
+- `/usr/share/doc/<包名>/`：README、changelog、示例配置，排障时经常能翻到官方说明。
+- 配置目录里的 `*.conf.example` 与 `man 5 xxx.conf` 往往比网上博客准。
 
-### 12.3 容器与虚拟机
-| 对比项 | 容器 | 虚拟机 |
-| --- | --- | --- |
-| 隔离级别 | 进程级，共享宿主机内核 | 硬件级，各自独立内核 |
-| 启动速度 | 毫秒到秒级 | 数十秒起 |
-| 隔离强度 | 较弱，内核漏洞可能逃逸 | 较强 |
-| 典型技术 | Docker、containerd、Kubernetes | KVM、VMware、Xen |
+## 10 新手最常踩的 10 个坑
 
-## 13 面试问答
-### 13.1 软链接和硬链接的区别？
-- 硬链接是同一 inode 的另一个名字，链接数 +1，删任一名字数据仍在；软链接是独立文件，内容是目标路径。
-- 硬链接不能跨文件系统、一般不能指向目录；软链接都可以，但目标删除后变成悬挂链接。
-### 13.2 inode 是什么？inode 耗尽怎么办？
-- inode 存元数据（权限、属主、大小、时间戳、数据块指针、链接数），不含文件名，文件名在目录项里。
-- `df -h` 有空间却写不进文件时用 `df -i` 确认；清理海量小文件，或重建文件系统用 `-N`/`-i` 加大 inode（XFS 动态分配）。
-### 13.3 进程状态 D 是什么？
-- 不可中断睡眠，进程在内核里等 IO 或锁，连 `kill -9` 也要等系统调用返回才生效。
-- 大量 `D` 会让 load 飙升而 CPU 空闲，多为磁盘故障或 NFS 失联，用 `ps -eo stat,pid,wchan,cmd | grep '^D'` 定位。
-### 13.4 如何查端口被谁占用？
-- `ss -tulnp | grep :8080` 直接列出监听进程与 PID（需 root 才看得到他人进程）。
-- 备选 `lsof -i:8080`、`fuser -n tcp 8080`；若是 TIME_WAIT 而非 LISTEN，说明是连接残留。
-### 13.5 systemd 和传统 init 的区别？
-- SysV init 按 `/etc/rc.d` 脚本串行启动、靠运行级别；systemd 用 unit 描述依赖，并行启动、按需激活。
-- systemd 用 cgroup 跟踪服务及子进程，`stop` 能杀干净整个进程组，并统一日志、定时任务与挂载管理。
-### 13.6 用 cgroup 限制 CPU 怎么做？
-- cgroup v2 写 `cpu.max`：`echo "50000 100000" > /sys/fs/cgroup/demo/cpu.max` 表示每 100ms 最多用 50ms，即 0.5 核。
-- 容器用 `docker run --cpus=1.5`，K8s 用 `resources.limits.cpu`；这是上限不是保底，保底用 `cpu.weight`。
-### 13.7 进入目录、读取文件分别需要什么权限？
-- 进目录要 `x`，列目录要 `r`，在目录内建删文件要 `w`（且需 `x` 才能进入）。
-- 读文件要文件 `r`，执行要 `x`；删除文件只看所在目录的 `w`。
-### 13.8 umask 022 新建文件和目录的权限是多少？
-- 文件基准 666 去掉 group/other 的写位 → `644`；目录基准 777 → `755`。
-- umask 是屏蔽位，实际权限 = 基准 & ~umask；生产常设 `027`，得 640 与 750。
-### 13.9 SUID 有什么用，有什么风险？
-- 让普通用户执行时临时获得文件属主（常为 root）权限，典型是 `/usr/bin/passwd` 改 `/etc/shadow`。
-- 风险是提权：SUID 程序若有命令注入或溢出即可拿 root，用 `find / -perm -4000 -type f` 定期审计。
-### 13.10 僵尸进程怎么产生、怎么处理？
-- 子进程退出后内核保留退出码等父进程 `wait()`，其间为 `Z`；父进程不回收就堆积，占 PID 表项。
-- 僵尸已释放内存，`kill -9` 无效；修父进程回收逻辑，或杀掉父进程让 PID 1 收养回收。
-### 13.11 孤儿进程和僵尸进程有什么区别？
-- 孤儿是父进程先退出、自己还在跑的进程，被 PID 1 收养后继续运行，无害。
-- 僵尸是子进程已退出但父进程不回收，只剩 PID 与退出码：孤儿还活着，僵尸死了没注销。
-### 13.12 为什么 df 和 du 结果不一致？
-- `df` 看文件系统块使用，`du` 按目录累加，口径不同。
-- 常见原因：文件已删除但被进程占用（`lsof +L1`）、挂载点被覆盖、稀疏文件、权限不足漏算。
-### 13.13 load average 高但 CPU 不高，为什么？
-- load 统计运行队列加不可中断睡眠进程，不只看 CPU 忙不忙。
-- 多见于磁盘 IO 慢、NFS 失联；`vmstat 1` 看 `b` 与 `wa`，`iostat -x` 看盘。
-### 13.14 free 里 available 和 free 的区别？
-- `free` 是完全未使用的内存，数值小很正常，Linux 会主动用空闲内存做 `buff/cache`。
-- `available` 是可估算的可用内存（含可回收缓存）；它很低且 `si/so` 非 0 才危险。
-### 13.15 内存持续上涨怎么排查？
-- 先确认真涨：`free -h` 看 available 趋势，`ps -eo pid,rss,cmd --sort=-rss` 找大户。
-- 再看进程内部：`/proc/PID/status` 的 VmRSS、`pmap -x PID`；Java 用 `jmap`，C/C++ 用 valgrind/ASan。
-### 13.16 IO 高怎么排查？
-- `iostat -x 1` 看哪块盘 `%util` 接近 100、`await` 升高、排队变长。
-- `iotop -o` 或 `pidstat -d` 定位进程；再确认是否日志刷盘、备份任务、swap 抖动。
-### 13.17 文件删除了但磁盘空间没释放，怎么处理？
-- 进程仍持有该文件 fd，inode 未释放，`df` 仍计入占用。
-- `lsof +L1` 找到进程与 fd；重启进程，或 `: > /proc/PID/fd/N` 截断为 0 立即回收。
-### 13.18 管道和重定向的区别？
-- 管道 `|` 把前一命令的 stdout 接到后一命令的 stdin，数据在内存流动、不落盘。
-- 重定向改变命令自身的输入输出指向，通常指向文件；管道默认只传 stdout。
-### 13.19 2>&1 是什么意思？顺序为什么重要？
-- 把 fd 2（stderr）指向当前 fd 1 所在位置。
-- `cmd > out 2>&1` 两者都进文件；`cmd 2>&1 > out` 中 stderr 仍指向终端，顺序不能反。
-### 13.20 nohup、&、disown 有什么区别？
-- `&` 只是放后台，shell 退出时仍可能收到 SIGHUP 而终止。
-- `nohup` 让进程忽略 SIGHUP，需配合 `&`；`disown` 把后台任务移出作业表。长期服务更推荐 systemd。
-### 13.21 为什么有的进程 kill -9 也杀不掉？
-- 处于 `D` 状态时信号要等系统调用返回才处理。
-- 僵尸进程已退出，`kill` 无效；或被父进程反复拉起，或本身是内核线程。
-### 13.22 怎么查内核版本和发行版版本？
-- 内核：`uname -r`，全量信息 `uname -a`。
-- 发行版：`cat /etc/os-release` 最通用，`hostnamectl` 也可；架构用 `uname -m`。
-### 13.23 开机自启动有哪些方式？
-- systemd：`systemctl enable xxx.service`，定时任务用 `xxx.timer`。
-- cron 的 `@reboot`、`/etc/rc.local`（需启用服务）、桌面环境的自启动项。
-### 13.24 MBR 和 GPT 有什么区别？
-- MBR 是 32 位 LBA，单盘上限 2 TB，最多 4 个主分区（可换逻辑分区），无校验备份。
-- GPT 是 64 位 LBA，默认 128 个分区，首尾各一份分区表带 CRC32 校验，配 UEFI 使用。
-### 13.25 如何统计日志里访问量 Top10 的 IP？
-- `awk '{print $1}' access.log | sort | uniq -c | sort -nr | head -10`。
-- 思路是取列 → 排序 → 相邻去重计数 → 倒序取前 10；`uniq` 必须先 `sort` 才准。
+1. **`rm` 没有回收站。** 删掉就没了，`rm -rf $DIR/` 在 `DIR` 为空时会变成 `rm -rf /`。执行前先 `ls` 同参数确认，关键目录用 `rm -i`，或用 `trash-cli` 代替。
+2. **用 `chmod 777` 解决一切权限问题。** 目录需要 `x` 才能进、删除看目录的 `w`，777 经常既解决不了问题又留下安全隐患，按最小权限给。
+3. **`sudo echo x > /etc/f` 仍报 Permission denied。** 重定向由当前 shell 打开，sudo 只提权了 `echo`。改用 `sudo tee /etc/f` 或 `sudo sh -c 'echo x > /etc/f'`。
+4. **Windows 编辑过的脚本报 `bad interpreter: /bin/bash^M`。** 是 CRLF 换行，`file`、`cat -A` 能看到 `^M`；用 `dos2unix a.sh` 或 `sed -i 's/\r$//' a.sh` 修，Git 里配 `core.autocrlf` 预防。
+5. **`usermod -G` 漏了 `-a`。** 附加组被整体覆盖，用户悄悄掉出 `sudo`、`docker` 组；追加组一律写 `usermod -aG`。
+6. **改完 systemd unit 不 `daemon-reload`。** 服务还是旧配置，甚至 `start` 报错；改 unit 后 `systemctl daemon-reload && systemctl restart xxx`。
+7. **把 `apt update` 当成升级。** 它只刷新索引；升级是 `apt upgrade`，而且装包前先 `update` 才能拿到新版本。
+8. **服务本机通、外面不通。** 常见是只监听 `127.0.0.1`，或防火墙没放行；`ss -tulnp` 看监听地址，再查 `firewall-cmd` / `ufw`。
+9. **磁盘还有空间却写不进文件。** 多半是 inode 用完（`df -i`）或文件已删但被进程占用（`lsof +L1`），`df -h` 看着有空间也没用。
+10. **长期用 root、直接手改 `/etc/sudoers`。** 前者手滑代价最大，后者写坏就没人能提权；用 `visudo`、按用户放 `/etc/sudoers.d/`，日常普通用户 + sudo。
+
+## 11 下一步
+
+本篇解决「是什么、怎么登录、目录与权限、用户怎么管、软件怎么装」。往下按这个顺序走：
+
+- [Linux常用命令](Linux常用命令.md)：文件、文本、查找、压缩、进程、网络、磁盘的命令速查，配合本篇第 4、5 章边看边敲。
+- [Linux详解](Linux详解.md)：进程与信号、systemd、磁盘与文件系统、网络与防火墙、Shell 脚本、性能排查、容器基础。
+- [Linux面试题](Linux面试题.md)：25 道高频问答，遮住答案自测，答不出的回到对应章节。
+
+自测清单（能全部说清再往下走）：
+
+1. `-rwxr-xr--` 是什么权限？`umask 022` 下新建文件和目录各是多少？
+2. 目录的 `r` 和 `x` 分别管什么？为什么给文件 `777` 也可能执行失败？
+3. 用户被加进 `docker` 组，为什么当前终端不生效？
+4. 登录 shell 与交互式非登录 shell 分别读哪些配置文件？
+5. 源码编译装的软件，怎么查它装到哪、又该怎么卸载？
