@@ -49,7 +49,7 @@ B:onStop -> onDestroy
 * 后台进程：其中运行着执行 onStop 方法而停止的程序，但是却不是用户当前关心的，例如后台挂着的QQ，这时的进程系统一旦没了有内存就首先被杀死。
 * 空进程：不包含任何应用程序的进程，这样的进程系统是一般不会让他存在的。
 
-### 5 Activty 和 Fragmengt 之间怎么通信，Fragmengt 和 Fragmengt怎么通信？
+### 5 Activity 和 Fragment 之间怎么通信，Fragment 和 Fragment 怎么通信？
 
 * Handler
 * 广播
@@ -290,7 +290,7 @@ dialog.getWindow().setType(WindowManager.LayoutParams.TYPE_SYSTEM_ALERT)
 
 ### 21 程序A能否接收到程序B的广播？
 
-可以，使用全局的 BroadCastRecevier 能进行跨进程通信，但是注意它只能被动接收广播，此外，LocalBroadCastRecevier 只限于本进程的广播间通信。
+可以，使用全局的 BroadCastReceiver 能进行跨进程通信，但是注意它只能被动接收广播，此外，LocalBroadCastReceiver 只限于本进程的广播间通信。
 
 ### 22 数据加载更多涉及到分页，你是怎么实现的？
 

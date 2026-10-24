@@ -666,7 +666,21 @@ Dart 语言中使用的并发机制，叫做 isolate 机制，不同于 Android 
 * 事件队列：包含外部事件，例如 I/O、Timer、绘制事件。
 * 微服务队列：Dart 内部微服务，通过 scheduleMicrotask 来调度。
 
-![](C:/Users/zpparts/Desktop/SoleilNotes/pic/Event-Loop.png)
+```text
+        ┌──────────────────────────┐
+        │        Event Loop        │
+        └───────────┬──────────────┘
+                    │
+        ┌───────────▼──────────────┐
+        │  Microtask queue 为空？   │──否──► 执行完全部 Microtask
+        └───────────┬──────────────┘
+                    │ 是
+        ┌───────────▼──────────────┐
+        │  Event queue 取出一个事件  │
+        └───────────┬──────────────┘
+                    │
+                    └──────────────► 回到开头
+```
 
 1. 先检查 Microtask queue是否为空，不为空，执行 MicroTask。
 2. 如果 Microtask queue 为空，判断 Event queue 是否为空，不为空执行 Event

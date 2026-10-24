@@ -132,7 +132,7 @@ public class ArrayList<E> extends AbstractList<E>
             newCapacity = minCapacity;
         //检查新容量是否超出最大容量，
         //超出,调用hugeCapacity()来比较minCapacity和 MAX_ARRAY_SIZE，
-        //如果minCapacity大于MAX_ARRAY_SIZE，则新容量则为Interger.MAX_VALUE，否则，新容量大小则为 MAX_ARRAY_SIZE。
+        //如果minCapacity大于MAX_ARRAY_SIZE，则新容量则为Integer.MAX_VALUE，否则，新容量大小则为 MAX_ARRAY_SIZE。
         if (newCapacity - MAX_ARRAY_SIZE > 0)
             newCapacity = hugeCapacity(minCapacity);
         //进行数组扩容    
